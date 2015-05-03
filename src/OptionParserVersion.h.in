@@ -1,0 +1,7 @@
+#ifndef _OPT_PARSE_OPTION_PARSER_VERSION_H
+#define _OPT_PARSE_OPTION_PARSER_VERSION_H
+
+/** Version of the option parser. */
+#define OPTION_PARSER_VERSION  "@PROJECT_VERSION@"
+
+#endif
