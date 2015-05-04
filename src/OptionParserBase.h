@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace optparse {
 
@@ -43,16 +44,16 @@ namespace optparse {
 			 */
 			Option(const String& description) : description(description) {}
 
-			/** Releases resources. */
+			/** Releases resources. Does nothing by default. */
 			virtual ~Option() {}
 
 			/**
-			 * Returns the description of this option.
+			 * Returns the description of this argument.
 			 *
 			 * @return
 			 *     Description of this option.
 			 */
-			virtual const String& getDescription() const {
+			inline const String& getDescription() const {
 				return this->description;
 			}
 
@@ -65,11 +66,14 @@ namespace optparse {
 			virtual bool needsValue() const = 0;
 
 			/**
-			 * Returns the name of the value.
+			 * Returns the name of the option value.
+			 *
+			 * This name is used to explain what should be specified to
+			 * this option.
 			 *
 			 * @return
-			 *     Name of the value.
-			 *     An empty string if this option takes no value.
+			 *     Name of the option value.
+			 *     Empty string if this option does not take a value.
 			 */
 			virtual String getValueName() const = 0;
 
@@ -89,11 +93,69 @@ namespace optparse {
 			 * @param options
 			 *     Options container to which this option is to be applied.
 			 * @param value
-			 *     Value for this option.
+			 *     Value given to this option.
 			 * @return
-			 *     Whether `value` is valid.
+			 *     Whether `value` is valid for this option.
 			 * @throws OptionParserException
 			 *     If this option does not take a value.
+			 */
+			virtual bool operator ()(Opt& options, const String& value) = 0;
+		};
+
+		/** Argument processor. */
+		class Argument {
+		protected:
+			/** Name of this argument. */
+			String name;
+
+			/** Description of this argument. */
+			String description;
+		public:
+			/**
+			 * Initializes with a description and a value name.
+			 *
+			 * @param valueName
+			 *     Name of this argument.
+			 * @param description
+			 *     Description of the argument.
+			 */
+			Argument(const String& name, const String& description)
+				: name(name), description(description) {}
+
+			/** Releases resources. Does nothing by default. */
+			virtual ~Argument() {}
+
+			/**
+			 * Returns the name of this argument.
+			 *
+			 * @return
+			 *     Name of this argument.
+			 */
+			inline const String& getName() const {
+				return this->name;
+			}
+
+			/**
+			 * Returns the description of this argument.
+			 *
+			 * @return
+			 *     Description of this option.
+			 */
+			inline const String& getDescription() const {
+				return this->description;
+			}
+
+			/**
+			 * Applies this argument with a given value.
+			 *
+			 * @param options
+			 *     Options container to which this argument is to be applied.
+			 * @param value
+			 *     Value given to this argument.
+			 * @return
+			 *     Whether `value` is valid for this argument.
+			 * @throws OptionParserException
+			 *     If this argument does not take a value.
 			 */
 			virtual bool operator ()(Opt& options, const String& value) = 0;
 		};
@@ -101,7 +163,7 @@ namespace optparse {
 		/** `Option` that takes a value. */
 		class ValueOption : public Option {
 		private:
-			/** Name of the value. */
+			/** Name of the option value. */
 			String valueName;
 		public:
 			/**
@@ -112,7 +174,7 @@ namespace optparse {
 			 * @param valueName
 			 *     Name of the value.
 			 */
-			ValueOption(const String& description, const String& valueName)
+			ValueOption(const String& valueName, const String& description)
 				: Option(description), valueName(valueName) {}
 
 			/** Takes a value; i.e., returns `true`. */
@@ -163,7 +225,7 @@ namespace optparse {
 			MemberOption(const String& description,
 						 T (SupOpt::*field),
 						 const Format& format = Format())
-				: ValueOption(description, format.getDefaultValueName()),
+				: ValueOption(format.getDefaultValueName(), description),
 				  field(field), format(format) {}
 
 			/**
@@ -174,9 +236,9 @@ namespace optparse {
 			 * @param value
 			 *     Value for this option.
 			 * @return
-			 *     Whether `value` is valid.
-			 *     `false` if `Format` cannot convert `label` to the intended
-			 *     type.
+			 *     Whether `value` is valid for this option.
+			 *     `false` if `Format` cannot convert `label` to a value of
+			 *     the type `T`.
 			 */
 			virtual bool operator ()(Opt& options, const String& value) {
 				return this->format(value, options.*this->field);
@@ -230,6 +292,62 @@ namespace optparse {
 				throw OptionParserException("no value needed");
 			}
 		};
+
+		/**
+		 * `Argument` that substitutes a member field.
+		 *
+		 * `T`: Type of an argument value.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `Opt`.
+		 *
+		 * `Format`: Type of a formatter from a string to a value of `T`.
+		 */
+		template < typename T, typename SupOpt, typename Format >
+		class MemberArgument : public Argument {
+		private:
+			/** Pointer to the field of `SupOpt` to be substituted. */
+			T (SupOpt::*field);
+
+			/** Formatter from a string to a value of type `T`. */
+			Format format;
+		public:
+			/**
+			 * Initialies an argument that substitues a given field.
+			 *
+			 * @param name
+			 *     Name of the argument.
+			 * @param description
+			 *     Description of the argument.
+			 * @param field
+			 *     Pointer to the field of `SupOpt` to be substituted.
+			 * @param format
+			 *     Formatter for the argument value.
+			 */
+			MemberArgument(const String& name,
+						   const String& description,
+						   T (SupOpt::*field),
+						   const Format& format = Format())
+				: Argument(name, description),
+				  field(field),
+				  format(format) {}
+
+			/**
+			 * Applies this argument with a given value.
+			 *
+			 * @param options
+			 *     Options container to which this argument is to be applied.
+			 * @param value
+			 *     Value for this argument.
+			 * @return
+			 *     Whether `value` is valid for this argument.
+			 *     `false` if `Format` cannot convert `value` into a value of
+			 *     the type `T`.
+			 */
+			virtual bool operator ()(Opt& options, const String& value) {
+				return this->format(value, options.*this->field);
+			}
+		};
 	private:
 		/** Type of an option map. */
 		typedef std::map< String, Option* > OptionMap;
@@ -251,12 +369,18 @@ namespace optparse {
 
 		/** Maps an option label to the corresponding `Option`. */
 		OptionMap optionMap;
+
+		/** List of positional arguments. */
+		std::vector< Argument* > arguments;
 	public:
 		/** Releases resources. */
 		virtual ~OptionParserBase() {
 			// deletes options
 			std::for_each(this->optionMap.begin(), this->optionMap.end(),
 						  &releaseOptionMapValue);
+			// deletes arguments
+			std::for_each(this->arguments.begin(), this->arguments.end(),
+						  [] (Argument* p) { delete p; });
 		}
 
 		/**
@@ -265,7 +389,7 @@ namespace optparse {
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with a new option.
 		 *
-		 * `T`: type of an option value.
+		 * `T`: Type of an option value.
 		 *
 		 * `SupOpt`: Type of a container for option values.
 		 *           Must be `Opt` or a super type of `Opt`.
@@ -328,6 +452,33 @@ namespace optparse {
 		}
 
 		/**
+		 * Appends an argument that subsitute a given field.
+		 *
+		 * `T`: Type of an argument value.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `Opt`.
+		 *
+		 * @param name
+		 *     Name of the argument.
+		 *     This name is used to explain what should be specified to
+		 *     the argument.
+		 * @param description
+		 *     Description of the argument.
+		 * @param field
+		 *     Pointer to the field of `SupOpt` to be substituted.
+		 */
+		template < typename T, typename SupOpt >
+		void appendArgument(const String& name,
+							const String& description,
+							T (SupOpt::*field))
+		{
+			Argument* arg = new MemberArgument
+				< T, SupOpt, MetaFormat< T, Ch > >(name, description, field);
+			this->arguments.push_back(arg);
+		}
+
+		/**
 		 * Parses given command line arguments.
 		 *
 		 * @param argc
@@ -347,6 +498,7 @@ namespace optparse {
 			this->programName = argv[0];
 			// processes rest of arguments
 			int argI = 1;
+			size_t nextPos = 0;
 			while (argI < argc) {
 				// checks if `argv[argI]` is an option label
 				if (isLabel(argv[argI])) {
@@ -376,9 +528,22 @@ namespace optparse {
 						return this->validator.unknownOption(options, label);
 					}
 				} else {
-					// TODO: processes `argv[argI]` as a positional argument
+					// processes the next positional argument
+					if (nextPos == this->arguments.size()) {
+						return this->validator.tooManyArguments(options);
+					}
+					Argument* posArg = this->arguments[nextPos++];
+					const Ch* value = argv[argI];
+					if (!(*posArg)(options, value)) {
+						return this->validator
+							.badValue(options, posArg->getName(), value);
+					}
 				}
 				++argI;
+			}
+			// makes sure that all of the positional arguments were substituted
+			if (nextPos != this->arguments.size()) {
+				return this->validator.tooFewArguments(options);
 			}
 			return this->validator.validate(options);
 		}
