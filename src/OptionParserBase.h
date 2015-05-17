@@ -193,6 +193,33 @@ namespace optparse {
 			}
 		};
 
+		/** `Option` that does not take values. */
+		class NoValueOption : public Option {
+		public:
+			/**
+			 * Initializes an option that does not take values.
+			 *
+			 * @param description
+			 *     Description of the option.
+			 */
+			NoValueOption(const String& description) : Option(description) {}
+
+			/** Does not take values; i.e., returns `false`. */
+			virtual bool needsValue() const {
+				return false;
+			}
+
+			/** Does not take values; i.e., returns an empty string. */
+			virtual String getValueName() const {
+				return String();
+			}
+
+			/** Does not take values; i.e., throws `OptionParserException`. */
+			virtual bool operator ()(Opt& option, const String& value) {
+				throw OptionParserException("no value needed");
+			}
+		};
+
 		/**
 		 * `Option` that substitutes a member field.
 		 *
@@ -237,7 +264,7 @@ namespace optparse {
 			 *     Value for this option.
 			 * @return
 			 *     Whether `value` is valid for this option.
-			 *     `false` if `Format` cannot convert `label` to a value of
+			 *     `false` if `Format` cannot convert `value` to a value of
 			 *     the type `T`.
 			 */
 			virtual bool operator ()(Opt& options, const String& value) {
@@ -247,9 +274,14 @@ namespace optparse {
 
 		/**
 		 * `Option` that substitutes a member field with a constant.
+		 *
+		 * `T`: Type of an option value.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `Opt`.
 		 */
-		template < typename T, typename SupOpt, typename Fmt >
-		class ConstMemberOption : public Option {
+		template < typename T, typename SupOpt >
+		class ConstMemberOption : public NoValueOption {
 		private:
 			/** Field to be substituted. */
 			T (SupOpt::*field);
@@ -270,26 +302,101 @@ namespace optparse {
 			ConstMemberOption(const String& description,
 							  T (SupOpt::*field),
 							  T constant)
-				: Option(description), field(field), constant(constant) {}
-
-			/** Does not take a value; i.e., returns `false`. */
-			virtual bool needsValue() const {
-				return false;
-			}
-
-			/** Does not take a value; i.e, returns an empty string. */
-			virtual String getValueName() const {
-				return String();
-			}
+				: NoValueOption(description),
+				  field(field), constant(constant) {}
 
 			/** Applies this option without a value. */
 			virtual void operator ()(Opt& options) {
 				options.*this->field = this->constant;
 			}
+		};
 
-			/** Does not take a value; i.e., throws OptionParserException. */
+		/**
+		 * `Option` that calls a given function.
+		 *
+		 * `T`: Type of an option value.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `Opt`.
+		 *
+		 * `Format`: Type of a formatter from a string to a value of the type
+		 *           `T`.
+		 */
+		template < typename T, typename SupOpt, typename Format >
+		class FunctionOption : public ValueOption {
+		private:
+			/** Function to be called. */
+			void (*f)(SupOpt&, T);
+
+			/** Formats a string into a value of the type `T`. */
+			Format format;
+		public:
+			/**
+			 * Initializes an option that calls a given function.
+			 *
+			 * @param description
+			 *     Description of the option.
+			 * @param f
+			 *     Function to be called when the option is specified.
+			 * @param format
+			 *     Formatter for the option.
+			 */
+			FunctionOption(const String& description,
+						   void (*f)(SupOpt&, T),
+						   const Format& format = Format())
+				: ValueOption(format.getDefaultValueName(), description),
+				  f(f), format(format) {}
+
+			/**
+			 * Calls the function specified at the construction with a given
+			 * value.
+			 *
+			 * @param[in,out] options
+			 *     Options to be given to the function.
+			 * @param strValue
+			 *     Value to be given to the function.
+			 * @return
+			 *     Whether `value` is valid for this option.
+			 *     `false` if `format` has failed to convert `value` into
+			 *     a value of the type `T`.
+			 */
 			virtual bool operator ()(Opt& options, const String& value) {
-				throw OptionParserException("no value needed");
+				T value_;
+				if (this->format(value, value_)) {
+					this->f(options, value_);
+					return true;
+				} else {
+					return false;
+				}
+			}
+		};
+
+		/**
+		 * `Option` that calls a given function without values.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `SupOpt`.
+		 */
+		template < typename SupOpt >
+		class ConstFunctionOption : public NoValueOption {
+		private:
+			/** Function to be called when this option is specified. */
+			void (*f)(SupOpt&);
+		public:
+			/**
+			 * Initializes an option that calls a given function.
+			 *
+			 * @param description
+			 *     Description of the option.
+			 * @param f
+			 *     Function to be called when the option is specified.
+			 */
+			ConstFunctionOption(const String& description, void (*f)(SupOpt&))
+				: NoValueOption(description), f(f) {}
+
+			/** Calls the function given at the construction. */
+			virtual void operator ()(Opt& options) {
+				this->f(options);
 			}
 		};
 
@@ -442,12 +549,67 @@ namespace optparse {
 		void addOption(const String& label,
 					   const String& description,
 					   T (SupOpt::*field),
-					   T constant)
+					   const T& constant)
 		{
 			verifyLabel(label);
-			Option* option =
-				new ConstMemberOption< T, SupOpt, MetaFormat< T, Ch > >
-					(description, field, constant);
+			Option* option = new ConstMemberOption
+				< T, SupOpt >(description, field, constant);
+			this->addOption(label, option);
+		}
+
+		/**
+		 * Adds an option that calls a given function.
+		 *
+		 * If an option corresponding to `label` already exists in this parser,
+		 * it will be replaced with a new option.
+		 *
+		 * `T`: type of an option value.
+		 *
+		 * `SupOpt`: Type of a container for option values.
+		 *           Must be `Opt` or a super type of `Opt`.
+		 *
+		 * @param label
+		 *     Option label on the command line.
+		 *     Must start with a dash ('-'). Like "-o" or "--option".
+		 * @param description
+		 *     Description of the option.
+		 * @param f
+		 *     Function to be called when the option is specified.
+		 *     Option value will be supplied to the second argument.
+		 * @throws OptionParserException
+		 *     If `label` does not start with a dash.
+		 */
+		template < typename T, typename SupOpt >
+		void addOption(const String& label,
+					   const String& description,
+					   void (*f)(SupOpt&, T))
+		{
+			verifyLabel(label);
+			Option* option = new FunctionOption
+				< T, SupOpt, MetaFormat< T, Ch > >(description, f);
+			this->addOption(label, option);
+		}
+
+		/**
+		 * Adds an option that calls a given function without argument.
+		 *
+		 * @param label
+		 *     Option label on the command line.
+		 *     Must start with a dash ('-'). Like "-o" or "--option".
+		 * @param description
+		 *     Description of the option.
+		 * @param f
+		 *     Function to be called when the option is specified.
+		 * @throws OptionParserException
+		 *     If `label` does not start with a dash.
+		 */
+		template < typename SupOpt >
+		void addOption(const String& label,
+					   const String& description,
+					   void (*f)(SupOpt&))
+		{
+			verifyLabel(label);
+			Option* option = new ConstFunctionOption< SupOpt >(description, f);
 			this->addOption(label, option);
 		}
 
