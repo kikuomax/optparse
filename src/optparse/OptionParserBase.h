@@ -1,7 +1,7 @@
-#ifndef _OPTPARSE_OPTION_PARSER_BASE_H
-#define _OPTPARSE_OPTION_PARSER_BASE_H
+#ifndef _OPTPARSE_OPTPARSE_OPTION_PARSER_BASE_H
+#define _OPTPARSE_OPTPARSE_OPTION_PARSER_BASE_H
 
-#include "OptionParserException.h"
+#include "optparse/OptionParserException.h"
 
 #include <algorithm>
 #include <map>

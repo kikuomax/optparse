@@ -1,7 +1,7 @@
-#ifndef _OPTPARSE_DEFAULT_USAGE_PRINTER_H
-#define _OPTPARSE_DEFAULT_USAGE_PRINTER_H
+#ifndef _OPTPARSE_OPTPARSE_DEFAULT_USAGE_PRINTER_H
+#define _OPTPARSE_OPTPARSE_DEFAULT_USAGE_PRINTER_H
 
-#include "OptionParserBase.h"
+#include "optparse/OptionParserBase.h"
 
 #include <iostream>
 

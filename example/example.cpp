@@ -1,7 +1,7 @@
-#include "DefaultFormatter.h"
-#include "DefaultUsagePrinter.h"
-#include "OptionParserBase.h"
-#include "OptionParserVersion.h"
+#include "optparse/DefaultFormatter.h"
+#include "optparse/DefaultUsagePrinter.h"
+#include "optparse/OptionParserBase.h"
+#include "optparse/optparse.h"
 
 #include <iostream>
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 							  &Options::positionalString);
 		Options options = parser.parse(argc, argv);
 		if (options.isVersionRequired) {
-			std::cout << "version: " << OPTION_PARSER_VERSION << std::endl;
+			std::cout << "version: " << OPTPARSE_VERSION << std::endl;
 			return 0;
 		}
 		std::cout << "optional number: "

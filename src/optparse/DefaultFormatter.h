@@ -1,7 +1,7 @@
-#ifndef _OPT_PARSE_DEFAULT_FORMATTER_H
-#define _OPT_PARSE_DEFAULT_FORMATTER_H
+#ifndef _OPTPARSE_OPTPARSE_DEFAULT_FORMATTER_H
+#define _OPTPARSE_OPTPARSE_DEFAULT_FORMATTER_H
 
-#include "OptionParserException.h"
+#include "optparse/OptionParserException.h"
 
 #include <cstdlib>
 #include <string>
