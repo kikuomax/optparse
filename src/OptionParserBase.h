@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <map>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -13,42 +15,104 @@ namespace optparse {
 	/**
 	 * Parser for command line options.
 	 *
-	 * `Opt`: Type of a container for option values.
+	 * ## MetaFormat
 	 *
-	 * `Validator`: Type of the validator for `Opt`.
+	 * `MetaFormat` is a template class which takes the following type
+	 * parameters.
+	 *  1. Type of a value `T`
+	 *  2. Type which represents a character; i.e., `Ch`
 	 *
-	 * `MetaFormat`: Type of the formatter from a string to a typed value.
+	 * `MetaFormat` must support a default constructor, and an instance of
+	 * `MetaFormat` must support a function call similar to the following,
 	 *
-	 * `Ch`: Type of an input character.
+	 *     T operator ()(const std::basic_string< Ch >& str) const
+	 *
+	 * It must take a string representation of the value `str` and return the
+	 * formatted value.
+	 * If formatting fails, it must throw `BadValue`.
+	 *
+	 * ## Other Type Parameters
+	 *
+	 * Throughout this class, the following type parameters are also used,
+	 *  - `T`
+	 *  - `SupOpt`
+	 *  - `Format`
+	 *
+	 * ### T
+	 *
+	 * A type of a value which an option can take.
+	 * It must support a default constructor and assignment.
+	 *
+	 * ### SupOpt
+	 *
+	 * A type of an options container, which is either `Opt` and a super type
+	 * of `Opt`.
+	 *
+	 * ### Format
+	 *
+	 * A type of a formatter which converts a string representation into
+	 * a value of the type `T`.
+	 * A specialization of `MetaFormat`.
+	 * `Format` must support a default constructor and an instance of `Format`
+	 * must support a function call similar to the following,
+	 *
+	 *     T operator ()(const std::basic_string< Ch >& str) const
+	 *
+	 * It must take a string representation of a value and return the formatted
+	 * value.
+	 * If formatting fails, it must throw `BadValue`.
+	 *
+	 * @tparam Opt
+	 *     Type of a container for option values.
+	 *     Must support a default constructor.
+	 * @tparam Ch
+	 *     Type which represents a character.
+	 * @tparam MetaFormat
+	 *     Template type which converts a string into a typed value.
 	 */
 	template < typename Opt,
-			   template < typename, typename > class Validator,
-			   template < typename, typename > class MetaFormat,
-			   typename Ch >
+			   typename Ch,
+			   template < typename, typename > class MetaFormat >
 	class OptionParserBase {
 	public:
-		/** Type of a string. */
+		/** String of `Ch`. */
 		typedef std::basic_string< Ch > String;
 	protected:
-		/** Option processor. */
+		/** Processor for an optional argument. */
 		class Option {
 		protected:
+			/** Label of this option. */
+			String label;
+
 			/** Description of this option. */
 			String description;
 		public:
 			/**
 			 * Initializes an option with a given description.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 */
-			Option(const String& description) : description(description) {}
+			inline Option(const String& label, const String& description)
+				: label(label), description(description) {}
 
 			/** Releases resources. Does nothing by default. */
 			virtual ~Option() {}
 
 			/**
-			 * Returns the description of this argument.
+			 * Returns the label of this option.
+			 *
+			 * @return
+			 *     Label of this option.
+			 */
+			inline const String& getLabel() const {
+				return this->label;
+			}
+
+			/**
+			 * Returns the description of this option.
 			 *
 			 * @return
 			 *     Description of this option.
@@ -82,7 +146,7 @@ namespace optparse {
 			 *
 			 * @param options
 			 *     Options container to which this option is to be applied.
-			 * @throws OptionParserException
+			 * @throws ValueNeeded
 			 *     If this option needs a value.
 			 */
 			virtual void operator ()(Opt& options) = 0;
@@ -94,15 +158,14 @@ namespace optparse {
 			 *     Options container to which this option is to be applied.
 			 * @param value
 			 *     Value given to this option.
-			 * @return
-			 *     Whether `value` is valid for this option.
-			 * @throws OptionParserException
-			 *     If this option does not take a value.
+			 * @throws BadValue
+			 *     If this option does not take a value,
+			 *     or if `value` is invalid.
 			 */
-			virtual bool operator ()(Opt& options, const String& value) = 0;
+			virtual void operator ()(Opt& options, const String& value) = 0;
 		};
 
-		/** Argument processor. */
+		/** Processor for a positional argument. */
 		class Argument {
 		protected:
 			/** Name of this argument. */
@@ -114,12 +177,12 @@ namespace optparse {
 			/**
 			 * Initializes with a description and a value name.
 			 *
-			 * @param valueName
+			 * @param name
 			 *     Name of this argument.
 			 * @param description
 			 *     Description of the argument.
 			 */
-			Argument(const String& name, const String& description)
+			inline Argument(const String& name, const String& description)
 				: name(name), description(description) {}
 
 			/** Releases resources. Does nothing by default. */
@@ -152,30 +215,33 @@ namespace optparse {
 			 *     Options container to which this argument is to be applied.
 			 * @param value
 			 *     Value given to this argument.
-			 * @return
-			 *     Whether `value` is valid for this argument.
-			 * @throws OptionParserException
-			 *     If this argument does not take a value.
+			 * @throws BadValue
+			 *     If this argument does not take a value,
+			 *     or if `value` is invalid.
 			 */
-			virtual bool operator ()(Opt& options, const String& value) = 0;
+			virtual void operator ()(Opt& options, const String& value) = 0;
 		};
 
-		/** `Option` that takes a value. */
+		/** `Option` which takes a value. */
 		class ValueOption : public Option {
-		private:
+		protected:
 			/** Name of the option value. */
 			String valueName;
 		public:
 			/**
 			 * Initializes an option that takes a value with a given name.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 * @param valueName
 			 *     Name of the value.
 			 */
-			ValueOption(const String& valueName, const String& description)
-				: Option(description), valueName(valueName) {}
+			inline ValueOption(const String& label,
+							   const String& valueName,
+							   const String& description)
+				: Option(label, description), valueName(valueName) {}
 
 			/** Takes a value; i.e., returns `true`. */
 			virtual bool needsValue() const {
@@ -187,22 +253,25 @@ namespace optparse {
 				return this->valueName;
 			}
 
-			/** Needs a value; i.e., throws `OptionParserException`. */
+			/** Needs a value; i.e., throws `ValueNeeded`. */
 			virtual void operator ()(Opt& option) {
-				throw OptionParserException("value needed");
+				throw ValueNeeded< Ch >(this->label);
 			}
 		};
 
-		/** `Option` that does not take values. */
+		/** `Option` which does not take values. */
 		class NoValueOption : public Option {
 		public:
 			/**
 			 * Initializes an option that does not take values.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 */
-			NoValueOption(const String& description) : Option(description) {}
+			inline NoValueOption(const String& label, const String& description)
+				: Option(label, description) {}
 
 			/** Does not take values; i.e., returns `false`. */
 			virtual bool needsValue() const {
@@ -214,21 +283,21 @@ namespace optparse {
 				return String();
 			}
 
-			/** Does not take values; i.e., throws `OptionParserException`. */
-			virtual bool operator ()(Opt& option, const String& value) {
-				throw OptionParserException("no value needed");
+			/** Does not take values; i.e., throws `BadValue`. */
+			virtual void operator ()(Opt& option, const String& value) {
+				throw BadValue< Ch >(this->label, "no value needed");
 			}
 		};
 
 		/**
-		 * `Option` that substitutes a member field.
+		 * `Option` which substitutes a member field.
 		 *
-		 * `T`: Type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
-		 * `Format`: Type of a formatter from a string to a value of `T`.
+		 * @tparam T
+		 *     See `OptionParserBase`
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`
+		 * @tparam Format
+		 *     See `OptionParserBase`
 		 */
 		template < typename T, typename SupOpt, typename Format >
 		class MemberOption : public ValueOption {
@@ -236,12 +305,14 @@ namespace optparse {
 			/** Field to be substituted. */
 			T (SupOpt::*field);
 
-			/** Formats a string into a value of `T`. */
+			/** Formats a string as a value of `T`. */
 			Format format;
 		public:
 			/**
 			 * Initializes an option that substitutes a given field.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 * @param field
@@ -249,36 +320,35 @@ namespace optparse {
 			 * @param format
 			 *     Formatter for the option value.
 			 */
-			MemberOption(const String& description,
-						 T (SupOpt::*field),
-						 const Format& format = Format())
-				: ValueOption(format.getDefaultValueName(), description),
-				  field(field), format(format) {}
+			inline MemberOption(const String& label,
+								const String& description,
+								T (SupOpt::*field),
+								const Format& format = Format())
+				: ValueOption(label, format.getDefaultValueName(), description),
+				  field(field),
+				  format(format) {}
 
 			/**
-			 * Applies this option with a given value.
-			 *
-			 * @param options
-			 *     Options container to which this options is to be applied.
-			 * @param value
-			 *     Value for this option.
-			 * @return
-			 *     Whether `value` is valid for this option.
-			 *     `false` if `Format` cannot convert `value` to a value of
-			 *     the type `T`.
+			 * Formats a given string and sets the field of a given options
+			 * container to the formatted value.
 			 */
-			virtual bool operator ()(Opt& options, const String& value) {
-				return this->format(value, options.*this->field);
+			virtual void operator ()(Opt& options, const String& value) {
+				try {
+					options.*(this->field) = this->format(value);
+				} catch (BadValue< Ch >& ex) {
+					// augments the exception with the label
+					throw BadValue< Ch >(this->label, ex.getMessage(), value);
+				}
 			}
 		};
 
 		/**
 		 * `Option` that substitutes a member field with a constant.
 		 *
-		 * `T`: Type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 */
 		template < typename T, typename SupOpt >
 		class ConstMemberOption : public NoValueOption {
@@ -292,6 +362,8 @@ namespace optparse {
 			/**
 			 * Initializes an option that substitutes a given field.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 * @param field
@@ -299,28 +371,29 @@ namespace optparse {
 			 * @param constant
 			 *     Constant to substitute the field.
 			 */
-			ConstMemberOption(const String& description,
-							  T (SupOpt::*field),
-							  T constant)
-				: NoValueOption(description),
-				  field(field), constant(constant) {}
+			inline ConstMemberOption(const String& label,
+									 const String& description,
+									 T (SupOpt::*field),
+									 T constant)
+				: NoValueOption(label, description),
+				  field(field),
+				  constant(constant) {}
 
 			/** Applies this option without a value. */
 			virtual void operator ()(Opt& options) {
-				options.*this->field = this->constant;
+				options.*(this->field) = this->constant;
 			}
 		};
 
 		/**
 		 * `Option` that calls a given function.
 		 *
-		 * `T`: Type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
-		 * `Format`: Type of a formatter from a string to a value of the type
-		 *           `T`.
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
 		 */
 		template < typename T, typename SupOpt, typename Format >
 		class FunctionOption : public ValueOption {
@@ -328,12 +401,14 @@ namespace optparse {
 			/** Function to be called. */
 			void (*f)(SupOpt&, T);
 
-			/** Formats a string into a value of the type `T`. */
+			/** Formats a string as a value of the type `T`. */
 			Format format;
 		public:
 			/**
 			 * Initializes an option that calls a given function.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 * @param f
@@ -341,32 +416,24 @@ namespace optparse {
 			 * @param format
 			 *     Formatter for the option.
 			 */
-			FunctionOption(const String& description,
-						   void (*f)(SupOpt&, T),
-						   const Format& format = Format())
-				: ValueOption(format.getDefaultValueName(), description),
-				  f(f), format(format) {}
+			inline FunctionOption(const String& label,
+								  const String& description,
+								  void (*f)(SupOpt&, T),
+								  const Format& format = Format())
+				: ValueOption(label, format.getDefaultValueName(), description),
+				  f(f),
+				  format(format) {}
 
 			/**
-			 * Calls the function specified at the construction with a given
-			 * value.
-			 *
-			 * @param[in,out] options
-			 *     Options to be given to the function.
-			 * @param strValue
-			 *     Value to be given to the function.
-			 * @return
-			 *     Whether `value` is valid for this option.
-			 *     `false` if `format` has failed to convert `value` into
-			 *     a value of the type `T`.
+			 * Formats a given string and passes the formatted value to the
+			 * function specified at the construction.
 			 */
-			virtual bool operator ()(Opt& options, const String& value) {
-				T value_;
-				if (this->format(value, value_)) {
-					this->f(options, value_);
-					return true;
-				} else {
-					return false;
+			virtual void operator ()(Opt& options, const String& value) {
+				try {
+					this->f(options, this->format(value));
+				} catch (BadValue< Ch >& ex) {
+					// augments the exception with the label
+					throw BadValue< Ch >(ex.getMessage(), this->label, value);
 				}
 			}
 		};
@@ -374,8 +441,8 @@ namespace optparse {
 		/**
 		 * `Option` that calls a given function without values.
 		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `SupOpt`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 */
 		template < typename SupOpt >
 		class ConstFunctionOption : public NoValueOption {
@@ -386,13 +453,17 @@ namespace optparse {
 			/**
 			 * Initializes an option that calls a given function.
 			 *
+			 * @param label
+			 *     Label of the option.
 			 * @param description
 			 *     Description of the option.
 			 * @param f
 			 *     Function to be called when the option is specified.
 			 */
-			ConstFunctionOption(const String& description, void (*f)(SupOpt&))
-				: NoValueOption(description), f(f) {}
+			inline ConstFunctionOption(const String& label,
+									   const String& description,
+									   void (*f)(SupOpt&))
+				: NoValueOption(label, description), f(f) {}
 
 			/** Calls the function given at the construction. */
 			virtual void operator ()(Opt& options) {
@@ -403,12 +474,12 @@ namespace optparse {
 		/**
 		 * `Argument` that substitutes a member field.
 		 *
-		 * `T`: Type of an argument value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
-		 * `Format`: Type of a formatter from a string to a value of `T`.
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
 		 */
 		template < typename T, typename SupOpt, typename Format >
 		class MemberArgument : public Argument {
@@ -416,7 +487,7 @@ namespace optparse {
 			/** Pointer to the field of `SupOpt` to be substituted. */
 			T (SupOpt::*field);
 
-			/** Formatter from a string to a value of type `T`. */
+			/** Formats a string as a value of type `T`. */
 			Format format;
 		public:
 			/**
@@ -431,42 +502,42 @@ namespace optparse {
 			 * @param format
 			 *     Formatter for the argument value.
 			 */
-			MemberArgument(const String& name,
-						   const String& description,
-						   T (SupOpt::*field),
-						   const Format& format = Format())
+			inline MemberArgument(const String& name,
+								  const String& description,
+								  T (SupOpt::*field),
+								  const Format& format = Format())
 				: Argument(name, description),
 				  field(field),
 				  format(format) {}
 
 			/**
-			 * Applies this argument with a given value.
-			 *
-			 * @param options
-			 *     Options container to which this argument is to be applied.
-			 * @param value
-			 *     Value for this argument.
-			 * @return
-			 *     Whether `value` is valid for this argument.
-			 *     `false` if `Format` cannot convert `value` into a value of
-			 *     the type `T`.
+			 * Formats a given string and sets the field of a given options
+			 * container to the formatted value.
 			 */
-			virtual bool operator ()(Opt& options, const String& value) {
-				return this->format(value, options.*this->field);
+			virtual void operator ()(Opt& options, const String& value) {
+				try {
+					options.*(this->field) = this->format(value);
+				} catch (BadValue< Ch >& ex) {
+					// augments the exception with the name
+					throw BadValue< Ch >(this->name, ex.getMessage(), value);
+				}
 			}
 		};
 	private:
+		/** Pointer to an option definition. */
+		typedef std::shared_ptr< Option > OptionPtr;
+
+		/** Pointer to an argument. */
+		typedef std::shared_ptr< Argument > ArgumentPtr;
+
 		/** Type of an option map. */
-		typedef std::map< String, Option* > OptionMap;
+		typedef std::map< String, OptionPtr > OptionMap;
 
 		/** Value type of `OptionMap`. */
 		typedef typename OptionMap::value_type OptionMapValue;
 
 		/** Iterator type of `OptionMap`. */
 		typedef typename OptionMap::iterator OptionMapItr;
-
-		/** Validator for this parser. */
-		Validator< Opt, Ch > validator;
 
 		/** Description of the program. */
 		String description;
@@ -478,16 +549,30 @@ namespace optparse {
 		OptionMap optionMap;
 
 		/** List of positional arguments. */
-		std::vector< Argument* > arguments;
+		std::vector< ArgumentPtr > arguments;
 	public:
 		/** Releases resources. */
-		virtual ~OptionParserBase() {
-			// deletes options
-			std::for_each(this->optionMap.begin(), this->optionMap.end(),
-						  &releaseOptionMapValue);
-			// deletes arguments
-			std::for_each(this->arguments.begin(), this->arguments.end(),
-						  [] (Argument* p) { delete p; });
+		virtual ~OptionParserBase() {}
+
+		/**
+		 * Returns the description of the program.
+		 *
+		 * @return
+		 *     Description of the program.
+		 */
+		inline const String& getDescription() const {
+			return this->description;
+		}
+
+		/**
+		 * Returns the program name.
+		 *
+		 * @return
+		 *     Name of the program.
+		 *     An empty string if `parse` has not yet been called.
+		 */
+		inline const String& getProgramName() const {
+			return this->programName;
 		}
 
 		/**
@@ -496,11 +581,10 @@ namespace optparse {
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with a new option.
 		 *
-		 * `T`: Type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
 		 *     Must start with a dash ('-'). Like "-o" or "--option".
@@ -508,7 +592,7 @@ namespace optparse {
 		 *     Description of the option.
 		 * @param field
 		 *     Pointer to the field of `SupOpt` to be substituted.
-		 * @throws OptionParserException
+		 * @throws ConfigException
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename T, typename SupOpt >
@@ -517,9 +601,9 @@ namespace optparse {
 					   T (SupOpt::*field))
 		{
 			verifyLabel(label);
-			Option* option = new MemberOption
-				< T, SupOpt, MetaFormat< T, Ch > >(description, field);
-			this->addOption(label, option);
+			OptionPtr pOption(new MemberOption
+				< T, SupOpt, MetaFormat< T, Ch > >(label, description, field));
+			this->addOption(label, pOption);
 		}
 
 		/**
@@ -528,11 +612,10 @@ namespace optparse {
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with a new option.
 		 *
-		 * `T`: type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
 		 *     Must start with a dash ('-'). Like "-o" or "--option".
@@ -542,7 +625,7 @@ namespace optparse {
 		 *     Pointer to the field of `SupOpt` to be substituted.
 		 * @param constant
 		 *     Constant that substitutes the field.
-		 * @throws OptionParserException
+		 * @throws ConfigException
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename T, typename SupOpt >
@@ -552,9 +635,9 @@ namespace optparse {
 					   const T& constant)
 		{
 			verifyLabel(label);
-			Option* option = new ConstMemberOption
-				< T, SupOpt >(description, field, constant);
-			this->addOption(label, option);
+			OptionPtr pOption(new ConstMemberOption
+				< T, SupOpt >(label, description, field, constant));
+			this->addOption(label, pOption);
 		}
 
 		/**
@@ -563,11 +646,10 @@ namespace optparse {
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with a new option.
 		 *
-		 * `T`: type of an option value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
 		 *     Must start with a dash ('-'). Like "-o" or "--option".
@@ -576,7 +658,7 @@ namespace optparse {
 		 * @param f
 		 *     Function to be called when the option is specified.
 		 *     Option value will be supplied to the second argument.
-		 * @throws OptionParserException
+		 * @throws ConfigException
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename T, typename SupOpt >
@@ -585,14 +667,16 @@ namespace optparse {
 					   void (*f)(SupOpt&, T))
 		{
 			verifyLabel(label);
-			Option* option = new FunctionOption
-				< T, SupOpt, MetaFormat< T, Ch > >(description, f);
-			this->addOption(label, option);
+			OptionPtr pOption(new FunctionOption
+				< T, SupOpt, MetaFormat< T, Ch > >(label, description, f));
+			this->addOption(label, pOption);
 		}
 
 		/**
 		 * Adds an option that calls a given function without argument.
 		 *
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
 		 *     Must start with a dash ('-'). Like "-o" or "--option".
@@ -600,7 +684,7 @@ namespace optparse {
 		 *     Description of the option.
 		 * @param f
 		 *     Function to be called when the option is specified.
-		 * @throws OptionParserException
+		 * @throws ConfigException
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename SupOpt >
@@ -609,18 +693,18 @@ namespace optparse {
 					   void (*f)(SupOpt&))
 		{
 			verifyLabel(label);
-			Option* option = new ConstFunctionOption< SupOpt >(description, f);
-			this->addOption(label, option);
+			OptionPtr pOption = OptionPtr(
+				new ConstFunctionOption< SupOpt >(label, description, f));
+			this->addOption(label, pOption);
 		}
 
 		/**
 		 * Appends an argument that subsitute a given field.
 		 *
-		 * `T`: Type of an argument value.
-		 *
-		 * `SupOpt`: Type of a container for option values.
-		 *           Must be `Opt` or a super type of `Opt`.
-		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
 		 * @param name
 		 *     Name of the argument.
 		 *     This name is used to explain what should be specified to
@@ -635,9 +719,9 @@ namespace optparse {
 							const String& description,
 							T (SupOpt::*field))
 		{
-			Argument* arg = new MemberArgument
-				< T, SupOpt, MetaFormat< T, Ch > >(name, description, field);
-			this->arguments.push_back(arg);
+			ArgumentPtr pArg(new MemberArgument
+				< T, SupOpt, MetaFormat< T, Ch > >(name, description, field));
+			this->arguments.push_back(pArg);
 		}
 
 		/**
@@ -649,124 +733,89 @@ namespace optparse {
 		 *     Command line arguments. First element must be the program name.
 		 * @return
 		 *     Parsed option values.
+		 * @throws TooFewArguments
+		 *     Thrown when too few arguments are given.
+		 * @throws TooManyArguments
+		 *     Thrown when too many arguments are given.
+		 * @throws ValueNeeded
+		 *     Thrown when no value is given to some option which needs a value.
+		 * @throws BadValue
+		 *     Thrown when a bad value is given to some option.
+		 * @throws UnknownOption
+		 *     Thrown when an unknown option is given.
 		 */
 		Opt parse(int argc, Ch** argv) {
 			Opt options;
 			// aborts if no arguments are specified
 			if (argc <= 0) {
-				return this->validator.tooFewArguments(options);
+				throw TooFewArguments();
 			}
 			// updates the program name
 			this->programName = argv[0];
 			// processes rest of arguments
 			int argI = 1;
-			size_t nextPos = 0;
+			size_t nextPos = 0;  // index of the next positional argument
 			while (argI < argc) {
 				// checks if `argv[argI]` is an option label
 				if (isLabel(argv[argI])) {
 					// processes an option
 					const Ch* label = argv[argI];
-					Option* option = this->findOption(label);
-					if (option) {
+					OptionPtr pOption = this->findOption(label);
+					if (pOption) {
 						// processes a value if necessary
-						if (option->needsValue()) {
+						if (pOption->needsValue()) {
 							// applies the option value
 							if (argI + 1 < argc) {
 								++argI;
 								const Ch* value = argv[argI];
-								if (!(*option)(options, value)) {
-									return this->validator
-										.badValue(options, label, value);
-								}
+								(*pOption)(options, value);
 							} else {
-								return this->validator
-									.valueNeeded(options, label);
+								throw ValueNeeded< Ch >(label);
 							}
 						} else {
 							// applies the option without a value
-							(*option)(options);
+							(*pOption)(options);
 						}
 					} else {
-						return this->validator.unknownOption(options, label);
+						throw UnknownOption< Ch >(label);
 					}
 				} else {
 					// processes the next positional argument
+					// aborts if too many arguments are given
 					if (nextPos == this->arguments.size()) {
-						return this->validator.tooManyArguments(options);
+						throw TooManyArguments();
 					}
-					Argument* posArg = this->arguments[nextPos++];
-					const Ch* value = argv[argI];
-					if (!(*posArg)(options, value)) {
-						return this->validator
-							.badValue(options, posArg->getName(), value);
-					}
+					Argument& posArg = *this->arguments[nextPos++];
+					posArg(options, argv[argI]);
 				}
 				++argI;
 			}
 			// makes sure that all of the positional arguments were substituted
 			if (nextPos != this->arguments.size()) {
-				return this->validator.tooFewArguments(options);
+				throw TooFewArguments();
 			}
-			return this->validator.validate(options);
-		}
-
-		/**
-		 * Prints the usage.
-		 *
-		 * If you omit `programName`, the name given to the last `parse`
-		 * function call will be used as the program name.
-		 *
-		 * `Printer`: Printer for the usage.
-		 *
-		 * @param programName
-		 *     Name of the program. May be omitted.
-		 */
-		template < template < typename > class Printer >
-		void printUsage(const Ch* programName = 0,
-						Printer< Ch >&& printer = Printer< Ch >())
-		{
-			// sets the basic information
-			printer.setDescription(this->description);
-			printer.setProgramName(
-				programName ? programName : this->programName);
-			// adds options
-			std::for_each(this->optionMap.begin(), this->optionMap.end(),
-				[&] (const OptionMapValue& value) {
-					const String& label = value.first;
-					const Option* option = value.second;
-					if (option->needsValue()) {
-						printer.addOption(label,
-										  option->getValueName(),
-										  option->getDescription());
-					} else {
-						printer.addOption(label, option->getDescription());
-					}
-				});
-			// prints the information
-			printer.print();
+			return options;
 		}
 	protected:
 		/**
 		 * Adds a given option to this parser.
 		 *
 		 * If an option corresponding to `label` already exists in this parser,
-		 * it will be deleted an replaced by `option`.
+		 * it will be replaced with `pOption`.
 		 *
 		 * NOTE: Never checks if `label` starts with a dash ('-').
 		 *
 		 * @param label
 		 *     Option label on the command line.
-		 * @param option
+		 * @param pOption
 		 *     Pointer to the option to be added.
 		 *     Must be allocated by the standard new operator.
 		 */
-		void addOption(const String& label, Option* option) {
-			std::pair< OptionMapItr, bool > ins =
-				this->optionMap.insert(OptionMapValue(label, option));
-			if (!ins.second) {
-				// replaces the older one
-				releaseOptionMapValue(*ins.first);
-				ins.first->second = option;
+		void addOption(const String& label, OptionPtr pOption) {
+			std::pair< OptionMapItr, bool > insertion =
+				this->optionMap.insert(OptionMapValue(label, pOption));
+			if (!insertion.second) {
+				insertion.first->second = pOption;
 			}
 		}
 
@@ -776,20 +825,21 @@ namespace optparse {
 		 * @param label
 		 *     Label of the option to be searched.
 		 * @return
-		 *     Option that has to `label`. 0 if no option has `label`.
+		 *     Option that has `label`. 0 if no option has `label`.
 		 */
-		Option* findOption(const String& label) {
+		OptionPtr findOption(const String& label) {
 			OptionMapItr optionItr = this->optionMap.find(label);
 			return optionItr != this->optionMap.end() ? optionItr->second : 0;
 		}
 
 		/**
-		 * Returns whehter a given option label is valid.
+		 * Returns whehter a given string is an option label.
 		 *
 		 * @param label
-		 *     Label to be tested.
+		 *     String to be tested.
 		 * @return
-		 *     Whether `label` starts with a dash ('-').
+		 *     Whether `label` is an option label;
+		 *    i.e., starts with a dash ('-').
 		 */
 		static inline bool isLabel(const String& label) {
 			return !label.empty() && label[0] == Ch('-');
@@ -800,25 +850,15 @@ namespace optparse {
 		 *
 		 * @param label
 		 *     Label to be tested.
-		 * @throws OptionParserException
+		 * @throws ConfigException
 		 *     If `label` does not start with a dash ('-').
 		 */
 		static void verifyLabel(const String& label) {
 			if (!isLabel(label)) {
-				throw OptionParserException("invalid option label");
+				std::ostringstream msg;
+				msg << "option label must start with dash (-): " << label;
+				throw ConfigException(msg.str());
 			}
-		}
-
-		/**
-		 * Releases a value in the option map.
-		 *
-		 * Deletes `value.second`.
-		 *
-		 * @param value
-		 *     Value in the option map to be released.
-		 */
-		static void releaseOptionMapValue(OptionMapValue& value) {
-			delete value.second;
 		}
 	private:
 	};

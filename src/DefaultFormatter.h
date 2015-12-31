@@ -1,6 +1,8 @@
 #ifndef _OPT_PARSE_DEFAULT_FORMATTER_H
 #define _OPT_PARSE_DEFAULT_FORMATTER_H
 
+#include "OptionParserException.h"
+
 #include <cstdlib>
 #include <string>
 
@@ -11,9 +13,10 @@ namespace optparse {
 	 *
 	 * Must be specialized.
 	 *
-	 * `T`: Type of the value.
-	 *
-	 * `Ch`: Type of an input character.
+	 * @tparam T
+	 *     Type which represents a value.
+	 * @tparam Ch
+	 *     Type which represents a character.
 	 */
 	template < typename T, typename Ch >
 	class DefaultFormatter {
@@ -27,28 +30,20 @@ namespace optparse {
 		 * @return
 		 *     Default name used to describe the value.
 		 */
-		String getDefaultValueName() const {
-			return String();
-		}
+		String getDefaultValueName() const;
 
 		/**
 		 * Converts a given string into a value of the type `T`.
 		 *
-		 * `value` is undefined if conversion has failed.
-		 *
 		 * @param valueStr
 		 *     String to be converted into a `T` value.
-		 * @param[out] value
-		 *     Converted value will be stored.
-		 * @return
-		 *     Whether conversion has succeeded.
+		 * @throws OptionParserBase::BadValue
+		 *     If `valueStr` is invalid.
 		 */
-		bool operator ()(const String& valueStr, T& value) const {
-			return false;
-		}
+		T operator ()(const String& valueStr) const;
 	};
 
-	/** `DefaultFormatter` from `std::string` to `int`. */
+	/** `DefaultFormatter` which converts an `std::string` into for `char`. */
 	template <>
 	class DefaultFormatter< int, char > {
 	public:
@@ -60,24 +55,18 @@ namespace optparse {
 		/**
 		 * Converts a given string into an `int` value.
 		 *
-		 * `value` won't be changed if conversion has failed.
-		 *
 		 * @param valueStr
 		 *     String to be converted.
-		 * @param[out] value
-		 *     Converted `int` will be stored.
-		 * @return
-		 *     Whether conversion has succeeded.
-		 *     `false` if `valueStr` is not a number.
+		 * @throws OptionParserBase::BadValue
+		 *     If `valueStr` is not an integer.
 		 */
-		bool operator ()(const std::string& valueStr, int& value) const {
+		int operator ()(const std::string& valueStr) const {
 			char* end = 0;
 			int x = strtol(valueStr.c_str(), &end, 10);
 			if (*end != '\0') {
-				return false;
+				throw BadValue< char >("invalid integer", valueStr);
 			}
-			value = x;
-			return true;
+			return x;
 		}
 	};
 
@@ -85,17 +74,14 @@ namespace optparse {
 	template <>
 	class DefaultFormatter< std::string, char > {
 	public:
-		/** Returns "str". */
+		/** Returns "STR". */
 		inline std::string getDefaultValueName() const {
-			return "str";
+			return "STR";
 		}
 
-		/** Just copies a given string and always succeeds. */
-		inline bool operator ()(const std::string& valueStr,
-								std::string& value) const
-		{
-			value = valueStr;
-			return true;
+		/** Just returns a given string. */
+		inline std::string operator ()(const std::string& valueStr) const {
+			return valueStr;
 		}
 	};
 
