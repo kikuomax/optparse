@@ -30,7 +30,7 @@ namespace optparse {
 	 *
 	 * It must take a string representation of the value `str` and return the
 	 * formatted value.
-	 * If formatting fails, it must throw `BadValue`.
+	 * If formatting fails, it must throw `BadValue< Ch >`.
 	 *
 	 * ## Other Type Parameters
 	 *
@@ -281,7 +281,7 @@ namespace optparse {
 
 			/** Does not take values; i.e., throws `BadValue`. */
 			virtual void operator ()(Opt& option, const String& value) {
-				throw BadValue< Ch >(this->label, "no value needed");
+				throw BadValue< Ch >("no value needed", this->label);
 			}
 		};
 
@@ -357,7 +357,7 @@ namespace optparse {
 					options.*(this->field) = this->format(value);
 				} catch (BadValue< Ch >& ex) {
 					// augments the exception with the label
-					throw BadValue< Ch >(this->label, ex.getMessage(), value);
+					throw BadValue< Ch >(ex.getMessage(), this->label, value);
 				}
 			}
 		};
@@ -563,7 +563,7 @@ namespace optparse {
 					options.*(this->field) = this->format(value);
 				} catch (BadValue< Ch >& ex) {
 					// augments the exception with the name
-					throw BadValue< Ch >(this->name, ex.getMessage(), value);
+					throw BadValue< Ch >(ex.getMessage(), this->name, value);
 				}
 			}
 		};
@@ -1049,9 +1049,7 @@ namespace optparse {
 		 */
 		static void verifyLabel(const String& label) {
 			if (!isLabel(label)) {
-				std::ostringstream msg;
-				msg << "option label must start with dash (-): " << label;
-				throw ConfigException(msg.str());
+				throw ConfigException("option label must start with dash (-)");
 			}
 		}
 	private:

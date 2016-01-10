@@ -166,7 +166,7 @@ namespace optparse {
 		 *     Invalid value given to the option.
 		 */
 		inline BadValue(const std::string& message, const String& value)
-			: OptionParsingException< Ch >(message, ""), value(value) {}
+			: OptionParsingException< Ch >(message, String()), value(value) {}
 
 		/** Returns the invalid value given to the option. */
 		inline const String& getValue() const {
