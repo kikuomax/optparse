@@ -35,7 +35,7 @@ static void triggerHelp(Options& options) {
 }
 
 /** Sets the debug level. */
-static void setDebugLevel(Options& options, int level) {
+static void setDebugLevel(Options& options, const int& level) {
 	std::cout << "set debug level to " << level << std::endl;
 }
 
@@ -46,9 +46,8 @@ static void setGlobalFlag(Options& options) {
 
 // runs a test
 int main(int argc, char** argv) {
-	optparse::OptionParserBase< Options,
-								char,
-								optparse::DefaultFormatter > parser;
+	optparse::OptionParserBase<
+		Options, char, optparse::DefaultFormatter > parser("Example program");
 	try {
 		// optional arguments
 		parser.addOption("-h", "prints usage", &triggerHelp);
