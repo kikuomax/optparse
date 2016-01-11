@@ -35,6 +35,11 @@ include_directories (
 
 add_executable (example example/example.cpp)
 
+add_executable (wexample example/example.cpp)
+
+set_target_properties (wexample
+	PROPERTIES COMPILE_FLAGS "-DWCHAR_EXAMPLE")
+
 # generates tests if necessary
 if (GENERATE_TESTS)
 	enable_testing ()
