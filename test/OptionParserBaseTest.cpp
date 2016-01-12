@@ -212,12 +212,6 @@ protected:
 		/** Field associated with "-s". Empty by default. */
 		std::string s;
 
-		/** Field associated with "--num". 0 by default. */
-		int num;
-
-		/** Field associated with "--name". Empty by default. */
-		std::string name;
-
 		/** Field associated with "-C". 0 by default. */
 		int C;
 
@@ -234,7 +228,7 @@ protected:
 		bool flag;
 
 		/** Initializes with default values. */
-		Options() : i(0), num(0), C(0), fn(0), flag(false) {}
+		Options() : i(0), C(0), fn(0), flag(false) {}
 
 		/** Sets the `fn` field to given value. */
 		static void setFn(Options& options, const int& x) {
@@ -265,10 +259,6 @@ protected:
 			"-i", "N", "int option", &Options::i);
 		this->pParser->addOption(
 			"-s", "STR", "string option", &Options::s);
-		this->pParser->addOption(
-			"--num", "NUM", "named int option", &Options::num);
-		this->pParser->addOption(
-			"--name", "NAME", "named string option", &Options::name);
 		this->pParser->addOption(
 			"-C", "const int option", &Options::C, 123);
 		this->pParser->addOption(
@@ -306,20 +296,6 @@ TEST_F(OptionsParsingTest, string_field_option_should_substitute_string_field_wi
 	const char* const ARGS[] = { "test.exe", "-s", "test" };
 	Options options = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ("test", options.s);
-}
-
-TEST_F(OptionsParsingTest, named_inf_field_option_should_substitute_int_field_with_given_value) {
-	const int ARGC = 3;
-	const char* const ARGS[] = { "test.exe", "--num", "-20" };
-	Options options = this->pParser->parse(ARGC, ARGS);
-	EXPECT_EQ(-20, options.num);
-}
-
-TEST_F(OptionsParsingTest, named_string_field_option_should_substitute_string_field_with_given_value) {
-	const int ARGC = 3;
-	const char* const ARGS[] = { "test.exe", "--name", "kikuo" };
-	Options options = this->pParser->parse(ARGC, ARGS);
-	EXPECT_EQ("kikuo", options.name);
 }
 
 TEST_F(OptionsParsingTest, const_int_field_option_should_substitute_int_field_with_constant_if_specified) {
@@ -394,11 +370,30 @@ class ArgumentsParsingTest : public ::testing::Test {
 protected:
 	/** Arguments to be substituted. */
 	struct Arguments {
-		/** Integer argument. */
+		/** Integer argument. 0 initially. */
 		int i;
 
-		/** String argument. */
+		/** String argument. Empty initially. */
 		std::string s;
+
+		/** Set by `setFn`. 0 initially. */
+		int fn;
+
+		/** Set by `setFs`. Empty initially. */
+		std::string fs;
+
+		/** Initializes arguments. */
+		Arguments() : i(0), fn(0) {}
+
+		/** Sets the `fn` field to a given value. */
+		static void setFn(Arguments& args, const int& x) {
+			args.fn = x;
+		}
+
+		/** Sets the `fs` field to a given string. */
+		static void setFs(Arguments& args, const std::string& str) {
+			args.fs = str;
+		}
 	};
 
 	/** Shared option parser. */
@@ -412,6 +407,10 @@ protected:
 		// configures arguments
 		this->pParser->appendArgument("i", "int argument", &Arguments::i);
 		this->pParser->appendArgument("s", "string argument", &Arguments::s);
+		this->pParser->appendArgument(
+			"fn", "int function argument", &Arguments::setFn);
+		this->pParser->appendArgument(
+			"fs", "string function argument", &Arguments::setFs);
 	}
 
 	/** Releases the shared option parser. */
@@ -421,11 +420,13 @@ protected:
 };
 
 TEST_F(ArgumentsParsingTest, arguments_should_be_substituted) {
-	const int ARGC = 3;
-	const char* const ARGS[] = { "test.exe", "123", "str" };
+	const int ARGC = 5;
+	const char* const ARGS[] = { "test.exe", "123", "str", "3", "called" };
 	Arguments args = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ(123, args.i);
 	EXPECT_EQ("str", args.s);
+	EXPECT_EQ(3, args.fn);
+	EXPECT_EQ("called", args.fs);
 }
 
 TEST_F(ArgumentsParsingTest, TooFewArguments_should_be_thrown_if_not_enough_arguments_are_given) {
@@ -435,13 +436,20 @@ TEST_F(ArgumentsParsingTest, TooFewArguments_should_be_thrown_if_not_enough_argu
 }
 
 TEST_F(ArgumentsParsingTest, TooManyArguments_should_be_thrown_if_unnecessary_argument_is_given) {
-	const int ARGC = 4;
-	const char* const ARGS[] = { "test.exe", "123", "str", "extra" };
+	const int ARGC = 6;
+	const char* const ARGS[] =
+		{ "test.exe", "123", "str", "3", "called", "extra" };
 	ASSERT_THROW(this->pParser->parse(ARGC, ARGS), optparse::TooManyArguments);
 }
 
 TEST_F(ArgumentsParsingTest, BadValue_should_be_thrown_if_non_number_is_given_to_int_argument) {
-	const int ARGC = 3;
-	const char* const ARGS[] = { "test.exe", "num", "str" };
+	const int ARGC = 5;
+	const char* const ARGS[] = { "test.exe", "num", "str", "3", "called" };
+	ASSERT_THROW(this->pParser->parse(ARGC, ARGS), optparse::BadValue< char >);
+}
+
+TEST_F(ArgumentsParsingTest, BadValue_should_be_thrown_if_non_number_is_given_to_int_function_argument) {
+	const int ARGC = 5;
+	const char* const ARGS[] = { "test.exe", "123", "str", "three", "called" };
 	ASSERT_THROW(this->pParser->parse(ARGC, ARGS), optparse::BadValue< char >);
 }

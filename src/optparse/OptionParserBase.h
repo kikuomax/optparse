@@ -499,6 +499,7 @@ namespace optparse {
 			 *
 			 * @param name
 			 *     Name of the argument.
+			 *     Used to explain what should be specified to the argument.
 			 * @param description
 			 *     Description of the argument.
 			 * @param field
@@ -523,6 +524,58 @@ namespace optparse {
 					options.*(this->field) = this->format(value);
 				} catch (BadValue< Ch >& ex) {
 					// augments the exception with the name
+					throw BadValue< Ch >(ex.getMessage(), this->name, value);
+				}
+			}
+		};
+
+		/**
+		 * Argument which calls a function.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
+		 */
+		template < typename T, typename SupOpt, typename Format >
+		class FunctionArgument : public Argument {
+		private:
+			/** Function to be called when this argument is specified. */
+			void (*f)(SupOpt&, const T&);
+
+			/** Formats a string as a value of the type `T`. */
+			Format format;
+		public:
+			/**
+			 * Initializes an argument which calls a given function.
+			 *
+			 * @param name
+			 *     Name of the argument.
+			 *     Used to explain what should be specified to the argument.
+			 * @param description
+			 *     Description of the argument.
+			 * @param f
+			 *     Function to be called when the argument is specified.
+			 * @param format
+			 *     Function object which formats a string as a value of
+			 *     the type `T`.
+			 */
+			FunctionArgument(const String& name,
+							 const String& description,
+							 void (*f)(SupOpt&, const T&),
+							 const Format& format = Format())
+				: Argument(name, description), f(f), format(format) {}
+
+			/**
+			 * Formats a given string and calls the function specified
+			 * at the construction with the formatted value.
+			 */
+			virtual void operator ()(SupOpt& options, const String& value) {
+				try {
+					this->f(options, this->format(value));
+				} catch (BadValue< Ch >& ex) {
 					throw BadValue< Ch >(ex.getMessage(), this->name, value);
 				}
 			}
@@ -803,6 +856,31 @@ namespace optparse {
 		{
 			ArgumentPtr pArg(new MemberArgument
 				< T, SupOpt, MetaFormat< T, Ch > >(name, description, field));
+			this->arguments.push_back(pArg);
+		}
+
+		/**
+		 * Appends an argument which calls a given function.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @param name
+		 *     Name of the argument.
+		 *     Used to explain what should be specified to the argument.
+		 * @param description
+		 *     Description of the argument.
+		 * @param f
+		 *     Function to be called when the argument is specified.
+		 */
+		template < typename T, typename SupOpt >
+		void appendArgument(const String& name,
+							const String& description,
+							void (*f)(SupOpt&, const T&))
+		{
+			ArgumentPtr pArg(new FunctionArgument
+				< T, SupOpt, MetaFormat< T, Ch > >(name, description, f));
 			this->arguments.push_back(pArg);
 		}
 
