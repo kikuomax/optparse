@@ -30,12 +30,12 @@ TEST(OptionParserBaseTest, int_field_option_can_be_added) {
 	};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	parser.addOption("-f", "test int field", &Dummy::field);
+	parser.addOption("--int", "NUM", "test int field", &Dummy::field);
 	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("-f", parser.getOption(0).getLabel());
+	EXPECT_EQ("--int", parser.getOption(0).getLabel());
 	EXPECT_EQ("test int field", parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("N", parser.getOption(0).getValueName());
+	EXPECT_EQ("NUM", parser.getOption(0).getValueName());
 }
 
 TEST(OptionParserBaseTest, string_field_option_can_be_added) {
@@ -44,12 +44,12 @@ TEST(OptionParserBaseTest, string_field_option_can_be_added) {
 	};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	parser.addOption("-f", "test string field", &Dummy::field);
+	parser.addOption("-s", "name", "test string field", &Dummy::field);
 	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("-f", parser.getOption(0).getLabel());
+	EXPECT_EQ("-s", parser.getOption(0).getLabel());
 	EXPECT_EQ("test string field", parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("STR", parser.getOption(0).getValueName());
+	EXPECT_EQ("name", parser.getOption(0).getValueName());
 }
 
 TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_option_field_does_not_start_with_dash) {
@@ -58,46 +58,8 @@ TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_opti
 	};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	ASSERT_THROW(parser.addOption("option", "test int field", &Dummy::field),
-				 optparse::ConfigException);
-}
-
-TEST(OptionParserBaseTest, named_int_field_option_can_be_added) {
-	struct Dummy {
-		int field;
-	};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
-	parser.addOption("--int", "NUM", "named int field", &Dummy::field);
-	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("--int", parser.getOption(0).getLabel());
-	EXPECT_EQ("named int field", parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("NUM", parser.getOption(0).getValueName());
-}
-
-TEST(OptionParserBaseTest, named_string_field_option_can_be_added) {
-	struct Dummy {
-		std::string field;
-	};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
-	parser.addOption("-s", "name", "named string field", &Dummy::field);
-	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("-s", parser.getOption(0).getLabel());
-	EXPECT_EQ("named string field", parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("name", parser.getOption(0).getValueName());
-}
-
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_named_int_option_field_does_not_start_with_dash) {
-	struct Dummy {
-		int field;
-	};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
 	ASSERT_THROW(
-		parser.addOption("o", "INT", "named int field", &Dummy::field),
+		parser.addOption("o", "INT", "test int field", &Dummy::field),
 		optparse::ConfigException);
 }
 
@@ -146,12 +108,12 @@ TEST(OptionParserBaseTest, int_function_option_can_be_added) {
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	parser.addOption("--function", "test int function", func);
+	parser.addOption("-f", "count", "test int function", func);
 	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("--function", parser.getOption(0).getLabel());
+	EXPECT_EQ("-f", parser.getOption(0).getLabel());
 	EXPECT_EQ("test int function", parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("N", parser.getOption(0).getValueName());
+	EXPECT_EQ("count", parser.getOption(0).getValueName());
 }
 
 TEST(OptionParserBaseTest, string_function_option_can_be_added) {
@@ -160,12 +122,12 @@ TEST(OptionParserBaseTest, string_function_option_can_be_added) {
 		[](Dummy&, const std::string&) {};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	parser.addOption("--function", "test string function", func);
+	parser.addOption("--fun", "SYMBOL", "test string function", func);
 	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("--function", parser.getOption(0).getLabel());
+	EXPECT_EQ("--fun", parser.getOption(0).getLabel());
 	EXPECT_EQ("test string function", parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("STR", parser.getOption(0).getValueName());
+	EXPECT_EQ("SYMBOL", parser.getOption(0).getValueName());
 }
 
 TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_function_option_does_not_start_with_dash) {
@@ -173,43 +135,7 @@ TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_func
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	ASSERT_THROW(parser.addOption("number", "test string function", func),
-				 optparse::ConfigException);
-}
-
-TEST(OptionParserBaseTest, named_int_function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
-	parser.addOption("-f", "count", "named int function", func);
-	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("-f", parser.getOption(0).getLabel());
-	EXPECT_EQ("named int function", parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("count", parser.getOption(0).getValueName());
-}
-
-TEST(OptionParserBaseTest, named_string_function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const std::string&) =
-		[](Dummy&, const std::string&) {};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
-	parser.addOption("--fun", "SYMBOL", "named string function", func);
-	ASSERT_EQ(1, parser.getOptionCount());
-	EXPECT_EQ("--fun", parser.getOption(0).getLabel());
-	EXPECT_EQ("named string function", parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ("SYMBOL", parser.getOption(0).getValueName());
-}
-
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_named_int_function_option_does_not_start_with_dash) {
-	struct Dummy {};
-	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
-	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
-		parser("test program");
-	ASSERT_THROW(parser.addOption("xyz", "XYZ", "named int function", func),
+	ASSERT_THROW(parser.addOption("xyz", "XYZ", "test int function", func),
 				 optparse::ConfigException);
 }
 
@@ -242,8 +168,8 @@ TEST(OptionParserBaseTest, int_field_option_can_be_replaced_with_string_field_op
 	};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	parser.addOption("-f", "test int field", &Dummy::intField);
-	parser.addOption("-f", "test string field", &Dummy::stringField);
+	parser.addOption("-f", "N", "test int field", &Dummy::intField);
+	parser.addOption("-f", "STR", "test string field", &Dummy::stringField);
 	ASSERT_EQ(1, parser.getOptionCount());
 	EXPECT_EQ("-f", parser.getOption(0).getLabel());
 	EXPECT_EQ("test string field", parser.getOption(0).getDescription());
@@ -298,8 +224,32 @@ protected:
 		/** Field associated with "-S". Empty by default. */
 		std::string S;
 
+		/** Field associated with "--fn". 0 by default. */
+		int fn;
+
+		/** Field associated with "--fs". Empty by default. */
+		std::string fs;
+
+		/** Field associated with "--flag". false by default. */
+		bool flag;
+
 		/** Initializes with default values. */
-		Options() : i(0), num(0), C(0) {}
+		Options() : i(0), num(0), C(0), fn(0), flag(false) {}
+
+		/** Sets the `fn` field to given value. */
+		static void setFn(Options& options, const int& x) {
+			options.fn = x;
+		}
+
+		/** Sets the `fs` field to given value. */
+		static void setFs(Options& options, const std::string& str) {
+			options.fs = str;
+		}
+
+		/** Turns the `flag` field into `true`. */
+		static void setFlag(Options& options) {
+			options.flag = true;
+		}
 	};
 
 	/** Shared option parser. */
@@ -312,9 +262,9 @@ protected:
 			Options, char, optparse::DefaultFormatter >("test program");
 		// configures optional fields
 		this->pParser->addOption(
-			"-i", "int option", &Options::i);
+			"-i", "N", "int option", &Options::i);
 		this->pParser->addOption(
-			"-s", "string option", &Options::s);
+			"-s", "STR", "string option", &Options::s);
 		this->pParser->addOption(
 			"--num", "NUM", "named int option", &Options::num);
 		this->pParser->addOption(
@@ -323,6 +273,12 @@ protected:
 			"-C", "const int option", &Options::C, 123);
 		this->pParser->addOption(
 			"-S", "const string option", &Options::S, std::string("constant"));
+		this->pParser->addOption(
+			"--fn", "INT", "int function option", &Options::setFn);
+		this->pParser->addOption(
+			"--fs", "STR", "string function option", &Options::setFs);
+		this->pParser->addOption(
+			"--flag", "function option", &Options::setFlag);
 	}
 
 	/** Releases the shared option parser. */
@@ -378,6 +334,27 @@ TEST_F(OptionsParsingTest, const_string_field_option_should_substitute_string_fi
 	const char* const ARGS[] = { "test.exe", "-S" };
 	Options options = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ("constant", options.S);
+}
+
+TEST_F(OptionsParsingTest, int_function_should_be_called_if_specified) {
+	const int ARGC = 3;
+	const char* const ARGS[] = { "test.exe", "--fn", "99" };
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_EQ(99, options.fn);
+}
+
+TEST_F(OptionsParsingTest, string_function_should_be_called_if_specified) {
+	const int ARGC = 3;
+	const char* const ARGS[] = { "test.exe", "--fs", "function" };
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_EQ("function", options.fs);
+}
+
+TEST_F(OptionsParsingTest, flag_function_should_be_called_if_specified) {
+	const int ARGC = 2;
+	const char* const ARGS[] = { "test.exe", "--flag" };
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_TRUE(options.flag);
 }
 
 TEST_F(OptionsParsingTest, TooFewArguments_should_be_thrown_if_no_arguments_are_given) {

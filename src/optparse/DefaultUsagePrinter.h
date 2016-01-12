@@ -10,19 +10,53 @@ namespace optparse {
 	/**
 	 * Traits of `DefaultUsagePrinter`.
 	 *
+	 * Must be specialized.
+	 *
 	 * @tparam Ch
 	 *     Type which represents a character.
 	 */
 	template < typename Ch >
-	class DefaultUsagePrinterTraits {};
+	class DefaultUsagePrinterTraits {
+	public:
+		/**
+		 * Returns the default output stream.
+		 *
+		 * This function must be specialized.
+		 *
+		 * @return
+		 *     Default output stream.
+		 */
+		static std::basic_ostream< Ch >& defaultOut();
+
+		/**
+		 * Converts a given `char` value into an equivalent `Ch` value.
+		 *
+		 * This function must be specialized.
+		 *
+		 * @param ch
+		 *     Character to be converted.
+		 * @return
+		 *     `Ch` value equivalent to `ch`.
+		 */
+		static char fromChar(char ch);
+
+		/**
+		 * Converts a given `char` string into an equivalent `Ch` string.
+		 *
+		 * This function must be specialized.
+		 *
+		 * @param str
+		 *     String to be converted.
+		 * @return
+		 *     `Ch` string equivalent to `str`.
+		 */
+		static std::basic_string< Ch > fromChar(const char* str);
+	};
 
 	/** Specialization of `DefaultUsagePrinterTraits` for `char`. */
 	template <>
 	class DefaultUsagePrinterTraits< char > {
 	public:
-		/** String type. */
-		typedef std::string String;
-
 		/** Returns the default output stream. Standard error. */
 		inline static std::basic_ostream< char >& defaultOut() {
 			return std::cerr;
@@ -43,9 +77,6 @@ namespace optparse {
 	template <>
 	class DefaultUsagePrinterTraits< wchar_t > {
 	public:
-		/** String type. */
-		typedef std::basic_string< wchar_t > String;
-
 		/** Returns the default output stream. */
 		inline static std::basic_ostream< wchar_t >& defaultOut() {
 			return std::wcerr;
@@ -74,8 +105,8 @@ namespace optparse {
 		 * @return
 		 *     `wchar_t` string equivalent to `str`.
 		 */
-		static String fromChar(const std::string& str) {
-			return String(str.begin(), str.end());
+		static std::wstring fromChar(const std::string& str) {
+			return std::wstring(str.begin(), str.end());
 		}
 	};
 
@@ -92,7 +123,7 @@ namespace optparse {
 		typedef DefaultUsagePrinterTraits< Ch > Traits;
 
 		/** String of `Ch`. */
-		typedef typename Traits::String String;
+		typedef std::basic_string< Ch > String;
 
 		/** Output stream where usage is written. */
 		std::basic_ostream< Ch >& out;

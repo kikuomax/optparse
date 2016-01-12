@@ -82,14 +82,14 @@ int main(int argc, char** argv) {
 		parser.addOption(
 			STR("-h"), STR("prints usage"), &triggerHelp);
 		parser.addOption(
-			STR("-d"), STR("sets debug level"), &setDebugLevel);
+			STR("-d"), STR("N"), STR("sets debug level"), &setDebugLevel);
 		parser.addOption(
 			STR("-g"), STR("sets global flag"), &setGlobalFlag);
 		parser.addOption(
 			STR("--number"), STR("NUM"), STR("optional numberic value"),
 			&Options::optionalNumber);
 		parser.addOption(
-			STR("--string"), STR("optional string value"),
+			STR("--string"), STR("STR"), STR("optional string value"),
 			&Options::optionalString);
 		parser.addOption(
 			STR("--version"), STR("prints version information and exits"),

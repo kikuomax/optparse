@@ -305,27 +305,7 @@ namespace optparse {
 			Format format;
 		public:
 			/**
-			 * Initializes an option that substitutes a given field.
-			 *
-			 * @param label
-			 *     Label of the option.
-			 * @param description
-			 *     Description of the option.
-			 * @param field
-			 *     Pointer to the field to be substituted.
-			 * @param format
-			 *     Formatter for the option value.
-			 */
-			inline MemberOption(const String& label,
-								const String& description,
-								T (SupOpt::*field),
-								const Format& format = Format())
-				: ValueOption(label, format.getDefaultValueName(), description),
-				  field(field),
-				  format(format) {}
-
-			/**
-			 * Initializes a named option which substitutes a given field.
+			 * Initializes an option which substitutes a given field.
 			 *
 			 * @param label
 			 *     Label of the option.
@@ -425,27 +405,7 @@ namespace optparse {
 			Format format;
 		public:
 			/**
-			 * Initializes an option that calls a given function.
-			 *
-			 * @param label
-			 *     Label of the option.
-			 * @param description
-			 *     Description of the option.
-			 * @param f
-			 *     Function to be called when the option is specified.
-			 * @param format
-			 *     Formatter for the option.
-			 */
-			inline FunctionOption(const String& label,
-								  const String& description,
-								  void (*f)(SupOpt&, const T&),
-								  const Format& format = Format())
-				: ValueOption(label, format.getDefaultValueName(), description),
-				  f(f),
-				  format(format) {}
-
-			/**
-			 * Initializes a named option which calls a given function.
+			 * Initializes an option which calls a given function.
 			 *
 			 * @param label
 			 *     Label of the option.
@@ -662,37 +622,6 @@ namespace optparse {
 		}
 
 		/**
-		 * Adds an option that substitutes a given field.
-		 *
-		 * If an option corresponding to `label` already exists in this parser,
-		 * it will be replaced with the new option.
-		 *
-		 * @tparam T
-		 *     See `OptionParserBase`.
-		 * @tparam SupOpt
-		 *     See `OptionParserBase`.
-		 * @param label
-		 *     Option label on the command line.
-		 *     Must start with a dash ('-'). Like "-o" or "--option".
-		 * @param description
-		 *     Description of the option.
-		 * @param field
-		 *     Pointer to the field of `SupOpt` to be substituted.
-		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
-		 */
-		template < typename T, typename SupOpt >
-		void addOption(const String& label,
-					   const String& description,
-					   T (SupOpt::*field))
-		{
-			verifyLabel(label);
-			OptionPtr pOption(new MemberOption
-				< T, SupOpt, MetaFormat< T, Ch > >(label, description, field));
-			this->addOption(label, pOption);
-		}
-
-		/**
 		 * Adds an option which substitutes a given field.
 		 *
 		 * If an option corresponding to `label` already exists in this parser,
@@ -764,38 +693,6 @@ namespace optparse {
 
 		/**
 		 * Adds an option that calls a given function.
-		 *
-		 * If an option corresponding to `label` already exists in this parser,
-		 * it will be replaced with the new option.
-		 *
-		 * @tparam T
-		 *     See `OptionParserBase`.
-		 * @tparam SupOpt
-		 *     See `OptionParserBase`.
-		 * @param label
-		 *     Option label on the command line.
-		 *     Must start with a dash ('-'). Like "-o" or "--option".
-		 * @param description
-		 *     Description of the option.
-		 * @param f
-		 *     Function to be called when the option is specified.
-		 *     Option value will be supplied to the second argument.
-		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
-		 */
-		template < typename T, typename SupOpt >
-		void addOption(const String& label,
-					   const String& description,
-					   void (*f)(SupOpt&, const T&))
-		{
-			verifyLabel(label);
-			OptionPtr pOption(new FunctionOption
-				< T, SupOpt, MetaFormat< T, Ch > >(label, description, f));
-			this->addOption(label, pOption);
-		}
-
-		/**
-		 * Adds a named option that calls a given function.
 		 *
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with the new option.
