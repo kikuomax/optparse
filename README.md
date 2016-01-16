@@ -4,7 +4,7 @@ There are already a lot of libraries you can choose for parsing command line opt
 To find a suitable library for you, [this conversation](http://stackoverflow.com/questions/253556/what-parameter-parser-libraries-are-there-for-c) could help you.
 
 The main motivation of this reinvention is **separation of a container for option values from a parser.**
-*optparse* will keep your option values container clean and make it easy to extend an existing option parser by inheritance.
+*optparse* will keep your option values container clean and make it easy to extend an existing option values container by inheritance.
 
 Prerequisites
 -------------
@@ -57,7 +57,7 @@ Creation of the `build` directory (step 2) is not necessary, but it prevents thi
 Examples
 --------
 
-The installation step (step 4 in [Getting Started](#getting_started)) also will compile examples.
+The installation step (step 4 in [Getting Started](#getting-started)) also will compile examples.
 You will find the following programs in the build directory,
  - `example`
 
@@ -70,7 +70,7 @@ You will find the following programs in the build directory,
 Running Tests
 -------------
 
-If you have [googletest](https://github.com/google/googletest) installed, unittests for *optparse* will also be built at the installation step (step 4 in [Getting Started](#getting_started)).
+If you have [googletest](https://github.com/google/googletest) installed, unittests for *optparse* will also be built at the installation step (step 4 in [Getting Started](#getting-started)).
 You can run the unittests by running the following command in the build directory,
 
 ```shell
@@ -82,7 +82,7 @@ The generation of the unittests can be suppressed by turning off the `GENERATE_T
 Generating Documentation
 ------------------------
 
-If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, documentation of *optparse* will also be generated at the installation step (step 4 in [Getting Started](#getting_started)).
+If you have [Doxygen](http://www.stack.nl/~dimitri/doxygen/) installed, documentation of *optparse* will also be generated at the installation step (step 4 in [Getting Started](#getting-started)).
 You will find the `api` directory in the build directory.
 The generation of the documentation can be suppressed by turning off the `GENERATE_DOCUMENTATION` option at the configuration step.
 
