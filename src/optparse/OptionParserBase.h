@@ -687,7 +687,6 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -696,7 +695,8 @@ namespace optparse {
 		 * @param field
 		 *     Pointer to the field of `SupOpt` to be substituted.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename T, typename SupOpt >
 		inline void addOption(const String& label,
@@ -723,7 +723,6 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -735,7 +734,8 @@ namespace optparse {
 		 *     Function object which converts a string into a value of the
 		 *     type `T`.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename T, typename SupOpt, typename Format >
 		void addOption(const String& label,
@@ -761,7 +761,6 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash ('-'); e.g., "-o", "--option".
 		 * @param description
 		 *     Description of the option.
 		 * @param field
@@ -769,7 +768,8 @@ namespace optparse {
 		 * @param constant
 		 *     Constant that substitutes the field.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename T, typename SupOpt >
 		void addOption(const String& label,
@@ -795,7 +795,6 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -804,7 +803,8 @@ namespace optparse {
 		 * @param f
 		 *     Function to be called when the option is specified.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename T, typename SupOpt >
 		inline void addOption(const String& label,
@@ -830,7 +830,6 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -842,7 +841,8 @@ namespace optparse {
 		 *     Function object which converts a string into a value of the
 		 *     type `T`.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename T, typename SupOpt, typename Format >
 		void addOption(const String& label,
@@ -866,13 +866,13 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash ('-'); e.g., "-o", "--option".
 		 * @param description
 		 *     Description of the option.
 		 * @param f
 		 *     Function to be called when the option is specified.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash.
+		 *     If `label` cannot be an option label
+		 *     (see `OptionParserBase::isLabel`).
 		 */
 		template < typename SupOpt >
 		void addOption(const String& label,
@@ -1094,6 +1094,32 @@ namespace optparse {
 			}
 			return options;
 		}
+
+		/**
+		 * Returns whehter a given string is an option label.
+		 *
+		 * An option label satisfies all of the following conditions,
+		 *  - Starts with a dash (`-`)
+		 *  - The first dash is not followed by digits (`0-9`) or a dot (`.`)
+		 *
+		 * @param label
+		 *     String to be tested.
+		 * @return
+		 *     Whether `label` is an option label.
+		 */
+		static bool isLabel(const String& label) {
+			if (label.empty()) {
+				return false;
+			}
+			if (label[0] != Ch('-')) {
+				return false;
+			}
+			if (label.size() == 1) {
+				return true;
+			}
+			const char c = label[1];
+			return c != Ch('.') && !(Ch('0') <= c && c <= Ch('9'));
+		}
 	protected:
 		/**
 		 * Adds a given option to this parser.
@@ -1115,12 +1141,12 @@ namespace optparse {
 			std::pair< OptionMapItr, bool > insertion = this->optionMap.insert(
 				OptionMapValue(label, IndexedOptionPtr(-1, pOption)));
 			if (!insertion.second) {
-				// obtains the index and replaces the entry
+				// replaces an existing option
 				int i = insertion.first->second.first;
 				insertion.first->second.second = pOption;
 				this->optionList[i] = pOption;
 			} else {
-				// assigns the index
+				// new otpion
 				insertion.first->second.first =
 					static_cast< int >(this->optionList.size());
 				this->optionList.push_back(pOption);
@@ -1142,25 +1168,15 @@ namespace optparse {
 		}
 
 		/**
-		 * Returns whehter a given string is an option label.
-		 *
-		 * @param label
-		 *     String to be tested.
-		 * @return
-		 *     Whether `label` is an option label;
-		 *    i.e., starts with a dash ('-').
-		 */
-		static inline bool isLabel(const String& label) {
-			return !label.empty() && label[0] == Ch('-');
-		}
-
-		/**
 		 * Checks whether a given option label is valid.
+		 *
+		 * `label` is tested by the `OptionParserBase::isLabel` function.
 		 *
 		 * @param label
 		 *     Label to be tested.
 		 * @throws ConfigException
-		 *     If `label` does not start with a dash ('-').
+		 *     If `label` cannot be an option label.
+		 * @see  isLabel
 		 */
 		static void verifyLabel(const String& label) {
 			if (!isLabel(label)) {

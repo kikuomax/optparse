@@ -24,6 +24,91 @@ TEST(OptionParserBaseTest, program_name_should_be_empty_by_default) {
 	ASSERT_EQ("", parser.getProgramName());
 }
 
+TEST(OptionParserBaseTest, parser_should_have_no_option_by_default) {
+	struct Dummy {};
+	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
+		parser("test program");
+	ASSERT_EQ(0, parser.getOptionCount());
+}
+
+TEST(OptionParserBaseTest, parser_should_have_no_argument_by_default) {
+	struct Dummy {};
+	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
+		parser("test program");
+	ASSERT_EQ(0, parser.getArgumentCount());
+}
+
+TEST(OptionParserBaseTest, string_starting_with_dash_followed_by_alphabet_can_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_TRUE(Parser::isLabel("-o"));
+	EXPECT_TRUE(Parser::isLabel("--option"));
+}
+
+TEST(OptionParserBaseTest, dash_can_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_TRUE(Parser::isLabel("-"));
+	EXPECT_TRUE(Parser::isLabel("--"));
+}
+
+TEST(OptionParserBaseTest, empty_string_cannot_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_FALSE(Parser::isLabel(""));
+}
+
+TEST(OptionParserBaseTest, string_starting_with_other_than_dash_cannot_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_FALSE(Parser::isLabel("o"));
+	EXPECT_FALSE(Parser::isLabel("option"));
+}
+
+TEST(OptionParserBaseTest, string_starting_with_dash_followed_by_digit_cannot_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_FALSE(Parser::isLabel("-0"));
+	EXPECT_FALSE(Parser::isLabel("-1"));
+	EXPECT_FALSE(Parser::isLabel("-2"));
+	EXPECT_FALSE(Parser::isLabel("-3"));
+	EXPECT_FALSE(Parser::isLabel("-4"));
+	EXPECT_FALSE(Parser::isLabel("-5"));
+	EXPECT_FALSE(Parser::isLabel("-6"));
+	EXPECT_FALSE(Parser::isLabel("-7"));
+	EXPECT_FALSE(Parser::isLabel("-8"));
+	EXPECT_FALSE(Parser::isLabel("-9"));
+}
+
+TEST(OptionParserBaseTest, string_starting_with_dash_followed_by_dot_cannot_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_FALSE(Parser::isLabel("-."));
+	EXPECT_FALSE(Parser::isLabel("-.1"));
+}
+
+TEST(OptionParserBaseTest, string_starting_with_dash_followed_by_another_dash_and_digit_can_be_option_label) {
+	struct Dummy {};
+	typedef optparse::OptionParserBase<
+		Dummy, char, optparse::DefaultFormatter > Parser;
+	EXPECT_TRUE(Parser::isLabel("--0"));
+	EXPECT_TRUE(Parser::isLabel("--1"));
+	EXPECT_TRUE(Parser::isLabel("--2"));
+	EXPECT_TRUE(Parser::isLabel("--3"));
+	EXPECT_TRUE(Parser::isLabel("--4"));
+	EXPECT_TRUE(Parser::isLabel("--5"));
+	EXPECT_TRUE(Parser::isLabel("--6"));
+	EXPECT_TRUE(Parser::isLabel("--7"));
+	EXPECT_TRUE(Parser::isLabel("--8"));
+	EXPECT_TRUE(Parser::isLabel("--9"));
+}
+
 TEST(OptionParserBaseTest, int_field_option_can_be_added) {
 	struct Dummy {
 		int field;
@@ -52,7 +137,7 @@ TEST(OptionParserBaseTest, string_field_option_can_be_added) {
 	EXPECT_EQ("name", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_field_option_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_field_option_is_invalid) {
 	struct Dummy {
 		int field;
 	};
@@ -81,7 +166,7 @@ TEST(OptionParserBaseTest, custom_format_field_option_can_be_added) {
 	EXPECT_EQ("X", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_format_field_option_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_format_field_option_is_invalid) {
 	struct Dummy {
 		int field;
 	};
@@ -91,8 +176,7 @@ TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_f
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
 	ASSERT_THROW(
-		parser.addOption("custom", "X", "custom int field",
-						 &Dummy::field, format),
+		parser.addOption("-3", "X", "custom int field", &Dummy::field, format),
 		optparse::ConfigException);
 }
 
@@ -125,14 +209,14 @@ TEST(OptionParserBaseTest, const_string_field_option_can_be_added) {
 	EXPECT_EQ("", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_const_int_field_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_const_int_field_is_invalid) {
 	struct Dummy {
 		int field;
 	};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
 	ASSERT_THROW(
-		parser.addOption("f", "test const int field", &Dummy::field, 123),
+		parser.addOption("", "test const int field", &Dummy::field, 123),
 		optparse::ConfigException);
 }
 
@@ -163,12 +247,12 @@ TEST(OptionParserBaseTest, string_function_option_can_be_added) {
 	EXPECT_EQ("SYMBOL", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_function_option_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_int_function_option_is_invalid) {
 	struct Dummy {};
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	ASSERT_THROW(parser.addOption("xyz", "XYZ", "test int function", func),
+	ASSERT_THROW(parser.addOption("-.9", "XYZ", "test int function", func),
 				 optparse::ConfigException);
 }
 
@@ -188,7 +272,7 @@ TEST(OptionParserBaseTest, custom_format_function_option_can_be_added) {
 	EXPECT_EQ("X", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_format_function_option_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_format_function_option_is_invalid) {
 	struct Dummy {};
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
 	int (*format)(const std::string&) = [](const std::string& str) {
@@ -197,7 +281,7 @@ TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_custom_f
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
 	ASSERT_THROW(
-		parser.addOption("xfun", "X", "custom int function", func, format),
+		parser.addOption("-9fun", "X", "custom int function", func, format),
 		optparse::ConfigException);
 }
 
@@ -214,12 +298,12 @@ TEST(OptionParserBaseTest, function_option_can_be_added) {
 	EXPECT_EQ("", parser.getOption(0).getValueName());
 }
 
-TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_function_option_does_not_start_with_dash) {
+TEST(OptionParserBaseTest, ConfigException_should_be_thrown_if_label_of_function_option_is_invalid) {
 	struct Dummy {};
 	void (*func)(Dummy&) = [](Dummy&) {};
 	optparse::OptionParserBase< Dummy, char, optparse::DefaultFormatter >
 		parser("test program");
-	ASSERT_THROW(parser.addOption("function", "test function", func),
+	ASSERT_THROW(parser.addOption("-.-", "test function", func),
 				 optparse::ConfigException);
 }
 
@@ -595,14 +679,14 @@ protected:
 
 TEST_F(ArgumentsParsingTest, arguments_should_be_substituted) {
 	const char* const ARGS[] = {
-		"test.exe", "123", "str", "custom", "3", "called", "custom function"
+		"test.exe", "123", "str", "custom", "-3", "called", "custom function"
 	};
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
 	Arguments args = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ(123, args.i);
 	EXPECT_EQ("str", args.s);
 	EXPECT_EQ(6, args.custom);
-	EXPECT_EQ(3, args.fn);
+	EXPECT_EQ(-3, args.fn);
 	EXPECT_EQ("called", args.fs);
 	EXPECT_EQ(15, args.customf);
 }
@@ -615,7 +699,7 @@ TEST_F(ArgumentsParsingTest, TooFewArguments_should_be_thrown_if_not_enough_argu
 
 TEST_F(ArgumentsParsingTest, TooManyArguments_should_be_thrown_if_unnecessary_argument_is_given) {
 	const char* const ARGS[] = {
-		"test.exe", "123", "str", "custom", "3", "called", "custom function",
+		"test.exe", "123", "str", "custom", "-3", "called", "custom function",
 		"extra"
 	};
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
@@ -624,7 +708,7 @@ TEST_F(ArgumentsParsingTest, TooManyArguments_should_be_thrown_if_unnecessary_ar
 
 TEST_F(ArgumentsParsingTest, BadValue_should_be_thrown_if_non_number_is_given_to_int_argument) {
 	const char* const ARGS[] = {
-		"test.exe", "num", "str", "custom", "3", "called", "custom function"
+		"test.exe", "num", "str", "custom", "-3", "called", "custom function"
 	};
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
 	ASSERT_THROW(this->pParser->parse(ARGC, ARGS), optparse::BadValue< char >);
