@@ -60,4 +60,17 @@ if (GENERATE_DOCUMENTATION)
 		${DOXYGEN_EXECUTABLE} Doxyfile
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 		COMMENT "Generating Doxygen documentation")
+	# installs the docs
+	install (DIRECTORY ${PROJECT_BINARY_DIR}/apis/html
+		DESTINATION apis/optparse)
 endif ()
+
+# installs headers
+install (FILES
+	src/optparse/DefaultFormatter.h
+	src/optparse/DefaultUsagePrinter.h
+	src/optparse/OptionParserBase.h
+	src/optparse/OptionParserException.h
+	src/optparse/OptionSpec.h
+	${PROJECT_BINARY_DIR}/src/optparse/optparse.h
+	DESTINATION include/optparse)
