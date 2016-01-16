@@ -53,15 +53,15 @@ namespace optparse {
 	 *
 	 * A type of a formatter which converts a string representation into
 	 * a value of the type `T`.
-	 * A specialization of `MetaFormat`.
-	 * `Format` must support a default constructor and an instance of `Format`
+	 * A specialization of `MetaFormat` by default.
+	 * `Format` must support a copy constructor and an instance of `Format`
 	 * must support a function call similar to the following,
 	 *
 	 *     T operator ()(const std::basic_string< Ch >& str) const
 	 *
 	 * It must take a string representation of a value and return the formatted
 	 * value.
-	 * If formatting fails, it must throw `BadValue`.
+	 * If formatting fails, it must throw `BadValue< Ch >`.
 	 *
 	 * @tparam Opt
 	 *     Type of a container for option values.
@@ -323,7 +323,7 @@ namespace optparse {
 								const String& name,
 								const String& description,
 								T (SupOpt::*field),
-								const Format& format = Format())
+								const Format& format)
 				: ValueOption(label, name, description),
 				  field(field),
 				  format(format) {}
@@ -510,7 +510,7 @@ namespace optparse {
 			inline MemberArgument(const String& name,
 								  const String& description,
 								  T (SupOpt::*field),
-								  const Format& format = Format())
+								  const Format& format)
 				: Argument(name, description),
 				  field(field),
 				  format(format) {}
@@ -677,8 +677,9 @@ namespace optparse {
 		/**
 		 * Adds an option which substitutes a given field.
 		 *
-		 * If an option corresponding to `label` already exists in this parser,
-		 * it will be replaced with the new option.
+		 * Equivalent to the following call,
+		 *
+		 *     this->addOption(label, name, description, field, MetaFormat< T, Ch >())
 		 *
 		 * @tparam T
 		 *     See `OptionParserBase`.
@@ -686,7 +687,7 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`). Like "-o" or "--option".
+		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -698,20 +699,58 @@ namespace optparse {
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename T, typename SupOpt >
+		inline void addOption(const String& label,
+							  const String& name,
+							  const String& description,
+							  T (SupOpt::*field))
+		{
+			this->addOption(
+				label, name, description, field, MetaFormat< T, Ch >());
+		}
+
+		/**
+		 * Adds an option which substitutes a given field with a value
+		 * formatted by a given function.
+		 *
+		 * If an option associated with `label` already exists in this parser,
+		 * it will be replaced with the new option.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
+		 * @param label
+		 *     Option label on the command line.
+		 *     Must start with a dash (`-`); e.g., "-o", "--option".
+		 * @param name
+		 *     Name of the value which the option takes.
+		 *     Used to explain what should be specified to the option.
+		 * @param description
+		 *     Description of the option.
+		 * @param field
+		 *     Pointer to the field of `SupOpt` to be substituted.
+		 * @param format
+		 *     Function object which converts a string into a value of the
+		 *     type `T`.
+		 * @throws ConfigException
+		 *     If `label` does not start with a dash.
+		 */
+		template < typename T, typename SupOpt, typename Format >
 		void addOption(const String& label,
 					   const String& name,
 					   const String& description,
-					   T (SupOpt::*field))
+					   T (SupOpt::*field),
+					   const Format& format)
 		{
-			verifyLabel(label);
-			OptionPtr pOption(
-				new MemberOption< T, SupOpt, MetaFormat< T, Ch > >(
-					label, name, description, field));
+			OptionPtr pOption(new MemberOption< T, SupOpt, Format >(
+				label, name, description, field, format));
 			this->addOption(label, pOption);
 		}
 
 		/**
-		 * Adds an option that substitutes a given field with a given constant.
+		 * Adds an option which substitutes a given field with a given constant.
 		 *
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with the new option.
@@ -722,7 +761,7 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash ('-'). Like "-o" or "--option".
+		 *     Must start with a dash ('-'); e.g., "-o", "--option".
 		 * @param description
 		 *     Description of the option.
 		 * @param field
@@ -738,17 +777,17 @@ namespace optparse {
 					   T (SupOpt::*field),
 					   const T& constant)
 		{
-			verifyLabel(label);
 			OptionPtr pOption(new ConstMemberOption
 				< T, SupOpt >(label, description, field, constant));
 			this->addOption(label, pOption);
 		}
 
 		/**
-		 * Adds an option that calls a given function.
+		 * Adds an option which calls a given function.
 		 *
-		 * If an option corresponding to `label` already exists in this parser,
-		 * it will be replaced with the new option.
+		 * Equivalent to the following call,
+		 *
+		 *     this->addOption(label, name, description, f, MetaFormat< T, Ch >())
 		 *
 		 * @tparam T
 		 *     See `OptionParserBase`.
@@ -756,7 +795,7 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash (`-`). Like "-o" or "--option".
+		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param name
 		 *     Name of the value which the option takes.
 		 *     Used to explain what should be specified to the option.
@@ -764,25 +803,61 @@ namespace optparse {
 		 *     Description of the option.
 		 * @param f
 		 *     Function to be called when the option is specified.
-		 *     Option value will be supplied to the second argument.
 		 * @throws ConfigException
 		 *     If `label` does not start with a dash.
 		 */
 		template < typename T, typename SupOpt >
+		inline void addOption(const String& label,
+							  const String& name,
+							  const String& description,
+							  void (*f)(SupOpt&, const T&))
+		{
+			this->addOption(label, name, description, f, MetaFormat< T, Ch >());
+		}
+
+		/**
+		 * Adds an option which calls a given function with a value formatted
+		 * by a given formatter function.
+		 *
+		 * If an option corresponding to `label` already exists in the parser,
+		 * it will be replaced with the new option.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
+		 * @param label
+		 *     Option label on the command line.
+		 *     Must start with a dash (`-`); e.g., "-o", "--option".
+		 * @param name
+		 *     Name of the value which the option takes.
+		 *     Used to explain what should be specified to the option.
+		 * @param description
+		 *     Description of the option.
+		 * @param f
+		 *     Function to be called when the option is specified.
+		 * @param format
+		 *     Function object which converts a string into a value of the
+		 *     type `T`.
+		 * @throws ConfigException
+		 *     If `label` does not start with a dash.
+		 */
+		template < typename T, typename SupOpt, typename Format >
 		void addOption(const String& label,
 					   const String& name,
 					   const String& description,
-					   void (*f)(SupOpt&, const T&))
+					   void (*f)(SupOpt&, const T&),
+					   const Format& format)
 		{
-			verifyLabel(label);
-			OptionPtr pOption(
-				new FunctionOption< T, SupOpt, MetaFormat< T, Ch > >(
-					label, name, description, f));
+			OptionPtr pOption(new FunctionOption< T, SupOpt, Format >(
+				label, name, description, f, format));
 			this->addOption(label, pOption);
 		}
 
 		/**
-		 * Adds an option that calls a given function without argument.
+		 * Adds an option which calls a given function without argument.
 		 *
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with the new option.
@@ -791,7 +866,7 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param label
 		 *     Option label on the command line.
-		 *     Must start with a dash ('-'). Like "-o" or "--option".
+		 *     Must start with a dash ('-'); e.g., "-o", "--option".
 		 * @param description
 		 *     Description of the option.
 		 * @param f
@@ -804,7 +879,6 @@ namespace optparse {
 					   const String& description,
 					   void (*f)(SupOpt&))
 		{
-			verifyLabel(label);
 			OptionPtr pOption(
 				new ConstFunctionOption< SupOpt >(label, description, f));
 			this->addOption(label, pOption);
@@ -834,7 +908,7 @@ namespace optparse {
 		}
 
 		/**
-		 * Appends an argument that subsitute a given field.
+		 * Appends an argument which subsitutes a given field.
 		 *
 		 * @tparam T
 		 *     See `OptionParserBase`.
@@ -842,8 +916,7 @@ namespace optparse {
 		 *     See `OptionParserBase`.
 		 * @param name
 		 *     Name of the argument.
-		 *     This name is used to explain what should be specified to
-		 *     the argument.
+		 *     Used to explain what should be specified to the argument.
 		 * @param description
 		 *     Description of the argument.
 		 * @param field
@@ -854,13 +927,48 @@ namespace optparse {
 							const String& description,
 							T (SupOpt::*field))
 		{
+			this->appendArgument(
+				name, description, field, MetaFormat< T, Ch >());
+		}
+
+		/**
+		 * Appends an argument which substitutes a given field with a value
+		 * formatted by a given formatter.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
+		 * @param name
+		 *     Name of the argument.
+		 *     Used to explain what should be specified to the argument.
+		 * @param description
+		 *     Description of the argument.
+		 * @param field
+		 *     Pointer to the field of `SupOpt` to be substituted.
+		 * @param format
+		 *     Function object which converts a string into a value of the
+		 *     type `T`.
+		 */
+		template < typename T, typename SupOpt, typename Format >
+		void appendArgument(const String& name,
+							const String& description,
+							T (SupOpt::*field),
+							const Format& format)
+		{
 			ArgumentPtr pArg(new MemberArgument
-				< T, SupOpt, MetaFormat< T, Ch > >(name, description, field));
+				< T, SupOpt, Format >(name, description, field, format));
 			this->arguments.push_back(pArg);
 		}
 
 		/**
 		 * Appends an argument which calls a given function.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     this->appendArgument(name, description, f, MetaFormat< T, Ch >())
 		 *
 		 * @tparam T
 		 *     See `OptionParserBase`.
@@ -879,8 +987,38 @@ namespace optparse {
 							const String& description,
 							void (*f)(SupOpt&, const T&))
 		{
+			this->appendArgument(name, description, f, MetaFormat< T, Ch >());
+		}
+
+		/**
+		 * Appends an argument which calls a given function with a value
+		 * formatted by a given formatter.
+		 *
+		 * @tparam T
+		 *     See `OptionParserBase`.
+		 * @tparam SupOpt
+		 *     See `OptionParserBase`.
+		 * @tparam Format
+		 *     See `OptionParserBase`.
+		 * @param name
+		 *     Name of the argument.
+		 *     Used to explain what should be specified to the argument.
+		 * @param description
+		 *     Description of the argument.
+		 * @param f
+		 *     Function to be called when the argument is specified.
+		 * @param format
+		 *     Function object which converts a string into a value of the
+		 *     type `T`.
+		 */
+		template < typename T, typename SupOpt, typename Format >
+		void appendArgument(const String& name,
+							const String& description,
+							void (*f)(SupOpt&, const T&),
+							const Format& format)
+		{
 			ArgumentPtr pArg(new FunctionArgument
-				< T, SupOpt, MetaFormat< T, Ch > >(name, description, f));
+				< T, SupOpt, Format >(name, description, f, format));
 			this->arguments.push_back(pArg);
 		}
 
@@ -963,17 +1101,19 @@ namespace optparse {
 		 * If an option corresponding to `label` already exists in this parser,
 		 * it will be replaced with `pOption`.
 		 *
-		 * NOTE: Never checks if `label` starts with a dash ('-').
-		 *
 		 * @param label
 		 *     Option label on the command line.
+		 *     Must start with a dash (`-`); e.g., "-o", "--option".
 		 * @param pOption
 		 *     Pointer to the option to be added.
 		 *     Must be allocated by the standard new operator.
+		 * @throws ConfigException
+		 *     If `label` does not start with a dash.
 		 */
 		void addOption(const String& label, OptionPtr pOption) {
-			std::pair< OptionMapItr, bool > insertion =
-				this->optionMap.insert(OptionMapValue(label, IndexedOptionPtr(-1, pOption)));
+			verifyLabel(label);
+			std::pair< OptionMapItr, bool > insertion = this->optionMap.insert(
+				OptionMapValue(label, IndexedOptionPtr(-1, pOption)));
 			if (!insertion.second) {
 				// obtains the index and replaces the entry
 				int i = insertion.first->second.first;
