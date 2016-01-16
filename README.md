@@ -70,14 +70,14 @@ You will find the following programs in the build directory,
 Running Tests
 -------------
 
-If you have [googletest](https://github.com/google/googletest) installed, unittests for *optparse* will also be built at the installation step (step 4 in [Getting Started](#getting-started)).
-You can run the unittests by running the following command in the build directory,
+If you have [googletest](https://github.com/google/googletest) installed, unit tests for *optparse* will also be built at the installation step (step 4 in [Getting Started](#getting-started)).
+You can run the unit tests by running the following command in the build directory,
 
 ```shell
 ctest -V
 ```
 
-The generation of the unittests can be suppressed by turning off the `GENERATE_TESTS` option at the configuration step.
+The generation of the unit tests can be suppressed by turning off the `GENERATE_TESTS` option at the configuration step.
 
 Generating Documentation
 ------------------------

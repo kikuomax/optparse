@@ -31,6 +31,7 @@ configure_file (src/optparse/optparse.h.in src/optparse/optparse.h @ONLY)
 include_directories (
 	src
 	example
+	test
 	${PROJECT_BINARY_DIR}/src)
 
 add_executable (example example/example.cpp)
@@ -46,7 +47,8 @@ if (GENERATE_TESTS)
 	# builds a test binary
 	include_directories (${GTEST_INCLUDE_DIRS})
 	add_executable (optparse-test
-		test/OptionParserBaseTest.cpp)
+		test/char_OptionParserBaseTest.cpp
+		test/wchar_t_OptionParserBaseTest.cpp)
 	target_link_libraries (optparse-test ${GTEST_BOTH_LIBRARIES})
 	add_test (optparse-test optparse-test)
 endif ()
