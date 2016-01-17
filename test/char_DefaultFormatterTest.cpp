@@ -5,4 +5,4 @@ typedef std::string String;
 #define STR(str)  str
 #define PREFIX(name)  char_ ## name
 
-#include "OptionParserBaseTest.h"
+#include "DefaultFormatterTest.h"

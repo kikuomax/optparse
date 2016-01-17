@@ -140,6 +140,21 @@ TEST(PREFIX(OptionParserBaseTest), string_field_option_can_be_added) {
 	EXPECT_EQ(STR("name"), parser.getOption(0).getValueName());
 }
 
+TEST(PREFIX(OptionParserBaseTest), double_field_option_can_be_added) {
+	struct Dummy {
+		double field;
+	};
+	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
+		parser(STR("test program"));
+	parser.addOption(
+		STR("-d"), STR("REAL"), STR("test double field"), &Dummy::field);
+	ASSERT_EQ(1, parser.getOptionCount());
+	EXPECT_EQ(STR("-d"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("test double field"), parser.getOption(0).getDescription());
+	ASSERT_TRUE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR("REAL"), parser.getOption(0).getValueName());
+}
+
 TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_int_field_option_is_invalid) {
 	struct Dummy {
 		int field;
@@ -218,6 +233,22 @@ TEST(PREFIX(OptionParserBaseTest), const_string_field_option_can_be_added) {
 	EXPECT_EQ(STR(""), parser.getOption(0).getValueName());
 }
 
+TEST(PREFIX(OptionParserBaseTest), const_double_field_option_can_be_added) {
+	struct Dummy {
+		double field;
+	};
+	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
+		parser(STR("test program"));
+	parser.addOption(
+		STR("-o"), STR("test const double field"), &Dummy::field, -0.5);
+	ASSERT_EQ(1, parser.getOptionCount());
+	EXPECT_EQ(STR("-o"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("test const double field"),
+			  parser.getOption(0).getDescription());
+	ASSERT_FALSE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR(""), parser.getOption(0).getValueName());
+}
+
 TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_const_int_field_is_invalid) {
 	struct Dummy {
 		int field;
@@ -256,6 +287,21 @@ TEST(PREFIX(OptionParserBaseTest), string_function_option_can_be_added) {
 			  parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
 	EXPECT_EQ(STR("SYMBOL"), parser.getOption(0).getValueName());
+}
+
+TEST(PREFIX(OptionParserBaseTest), double_function_option_can_be_added) {
+	struct Dummy {};
+	void (*func)(Dummy&, const double&) = [](Dummy&, const double&) {};
+	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
+		parser(STR("test program"));
+	parser.addOption(
+		STR("--real"), STR("X"), STR("test double function"), func);
+	ASSERT_EQ(1, parser.getOptionCount());
+	EXPECT_EQ(STR("--real"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("test double function"),
+			  parser.getOption(0).getDescription());
+	ASSERT_TRUE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR("X"), parser.getOption(0).getValueName());
 }
 
 TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_int_function_option_is_invalid) {
@@ -364,6 +410,18 @@ TEST(PREFIX(OptionParserBaseTest), string_field_argument_can_be_added) {
 	EXPECT_EQ(STR("STRING"), parser.getArgument(0).getValueName());
 }
 
+TEST(PREFIX(OptionParserBaseTest), double_field_argument_can_be_added) {
+	struct Dummy {
+		double field;
+	};
+	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
+		parser(STR("test program"));
+	parser.appendArgument(STR("DOUBLE"), STR("double argument"), &Dummy::field);
+	ASSERT_EQ(1, parser.getArgumentCount());
+	EXPECT_EQ(STR("double argument"), parser.getArgument(0).getDescription());
+	EXPECT_EQ(STR("DOUBLE"), parser.getArgument(0).getValueName());
+}
+
 TEST(PREFIX(OptionParserBaseTest), custom_format_field_argument_can_be_added) {
 	struct Dummy {
 		int field;
@@ -405,6 +463,18 @@ TEST(PREFIX(OptionParserBaseTest), string_function_argument_can_be_added) {
 	EXPECT_EQ(STR("SFUN"), parser.getArgument(0).getValueName());
 }
 
+TEST(PREFIX(OptionParserBaseTest), double_function_argument_can_be_added) {
+	struct Dummy {};
+	void (*func)(Dummy&, const String&) = [](Dummy&, const String&) {};
+	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
+		parser(STR("test program"));
+	parser.appendArgument(STR("DFUN"), STR("double function argument"), func);
+	ASSERT_EQ(1, parser.getArgumentCount());
+	EXPECT_EQ(STR("double function argument"),
+			  parser.getArgument(0).getDescription());
+	EXPECT_EQ(STR("DFUN"), parser.getArgument(0).getValueName());
+}
+
 TEST(PREFIX(OptionParserBaseTest), custom_format_function_argument_can_be_added) {
 	struct Dummy {};
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
@@ -429,6 +499,9 @@ protected:
 		/** Field associated with "-i". 0 by default. */
 		int i;
 
+		/** Field associated with "-d". Empty by default. */
+		double d;
+
 		/** Field associated with "-s". Empty by default. */
 		String s;
 
@@ -438,11 +511,17 @@ protected:
 		/** Field associated with "-C". 0 by default. */
 		int C;
 
+		/** Field associated with "-D". 0 by default. */
+		double D;
+
 		/** Field associated with "-S". Empty by default. */
 		String S;
 
 		/** Field associated with "--fn". 0 by default. */
 		int fn;
+
+		/** Field associated with "--fd". 0 by default. */
+		double fd;
 
 		/** Field associated with "--fs". Empty by default. */
 		String fs;
@@ -454,7 +533,7 @@ protected:
 		bool flag;
 
 		/** Initializes with default values. */
-		Options() : i(0), C(0), fn(0), flag(false) {}
+		Options() : i(0), d(0), C(0), D(0), fn(0), fd(0), flag(false) {}
 
 		/** Formats the custom field value. */
 		static int formatCustom(const String& value) {
@@ -464,6 +543,11 @@ protected:
 		/** Sets the `fn` field to a given value. */
 		static void setFn(Options& options, const int& x) {
 			options.fn = x;
+		}
+
+		/** Sets the `fd` field to a given value. */
+		static void setFd(Options& options, const double& x) {
+			options.fd = x;
 		}
 
 		/** Sets the `fs` field to a given value. */
@@ -494,6 +578,8 @@ protected:
 		this->pParser->addOption(
 			STR("-i"), STR("N"), STR("int option"), &Options::i);
 		this->pParser->addOption(
+			STR("-d"), STR("R"), STR("double option"), &Options::d);
+		this->pParser->addOption(
 			STR("-s"), STR("STR"), STR("string option"), &Options::s);
 		this->pParser->addOption(
 			STR("--custom"), STR("X"), STR("custom int option"),
@@ -501,11 +587,16 @@ protected:
 		this->pParser->addOption(
 			STR("-C"), STR("const int option"), &Options::C, 123);
 		this->pParser->addOption(
+			STR("-D"), STR("const double option"), &Options::D, 3.14);
+		this->pParser->addOption(
 			STR("-S"), STR("const string option"),
 			&Options::S, String(STR("constant")));
 		this->pParser->addOption(
 			STR("--fn"), STR("INT"), STR("int function option"),
 			&Options::setFn);
+		this->pParser->addOption(
+			STR("--fd"), STR("REAL"), STR("double function option"),
+			&Options::setFd);
 		this->pParser->addOption(
 			STR("--fs"), STR("STR"), STR("string function option"),
 			&Options::setFs);
@@ -536,6 +627,13 @@ TEST_F(PREFIX(OptionsParsingTest), int_field_option_should_substitute_int_field_
 	EXPECT_EQ(4649, options.i);
 }
 
+TEST_F(PREFIX(OptionsParsingTest), double_field_option_should_substitute_double_field_with_given_value) {
+	const Ch* const ARGS[] = { STR("test.exe"), STR("-d"), STR("1.2e-5") };
+	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_DOUBLE_EQ(1.2e-5, options.d);
+}
+
 TEST_F(PREFIX(OptionsParsingTest), string_field_option_should_substitute_string_field_with_given_value) {
 	const Ch* const ARGS[] = { STR("test.exe"), STR("-s"), STR("test") };
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
@@ -558,6 +656,13 @@ TEST_F(PREFIX(OptionsParsingTest), const_int_field_option_should_substitute_int_
 	EXPECT_EQ(123, options.C);
 }
 
+TEST_F(PREFIX(OptionsParsingTest), const_double_field_option_should_substitute_double_field_with_constant_if_specified) {
+	const Ch* const ARGS[] = { STR("test.exe"), STR("-D") };
+	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_DOUBLE_EQ(3.14, options.D);
+}
+
 TEST_F(PREFIX(OptionsParsingTest), const_string_field_option_should_substitute_string_field_with_constant_if_specified) {
 	const Ch* const ARGS[] = { STR("test.exe"), STR("-S") };
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
@@ -570,6 +675,13 @@ TEST_F(PREFIX(OptionsParsingTest), int_function_should_be_called_if_specified) {
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
 	Options options = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ(99, options.fn);
+}
+
+TEST_F(PREFIX(OptionsParsingTest), double_function_shoudl_be_called_if_specified) {
+	const Ch* const ARGS[] = { STR("test.exe"), STR("--fd"), STR("-.5") };
+	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
+	Options options = this->pParser->parse(ARGC, ARGS);
+	EXPECT_DOUBLE_EQ(-0.5, options.fd);
 }
 
 TEST_F(PREFIX(OptionsParsingTest), string_function_should_be_called_if_specified) {
@@ -634,6 +746,9 @@ protected:
 		/** Integer argument. 0 initially. */
 		int i;
 
+		/** Double argument. 0 initially. */
+		double d;
+
 		/** String argument. Empty initially. */
 		String s;
 
@@ -643,6 +758,9 @@ protected:
 		/** Set by `setFn`. 0 initially. */
 		int fn;
 
+		/** Set by `setFd`. 0 initially. */
+		double fd;
+
 		/** Set by `setFs`. Empty initially. */
 		String fs;
 
@@ -650,7 +768,7 @@ protected:
 		int customf;
 
 		/** Initializes arguments. */
-		Arguments() : i(0), custom(0), fn(0) {}
+		Arguments() : i(0), d(0), custom(0), fn(0), fd(0) {}
 
 		/** Custom formatter function. */
 		static int format(const String& str) {
@@ -660,6 +778,11 @@ protected:
 		/** Sets the `fn` field to a given value. */
 		static void setFn(Arguments& args, const int& x) {
 			args.fn = x;
+		}
+
+		/** Sets the `fd` field to a given value. */
+		static void setFd(Arguments& args, const double& x) {
+			args.fd = x;
 		}
 
 		/** Sets the `fs` field to a given string. */
@@ -685,12 +808,16 @@ protected:
 		this->pParser->appendArgument(
 			STR("i"), STR("int argument"), &Arguments::i);
 		this->pParser->appendArgument(
+			STR("d"), STR("double argument"), &Arguments::d);
+		this->pParser->appendArgument(
 			STR("s"), STR("string argument"), &Arguments::s);
 		this->pParser->appendArgument(
 			STR("custom"), STR("custom field argument"),
 			&Arguments::custom, &Arguments::format);
 		this->pParser->appendArgument(
 			STR("fn"), STR("int function argument"), &Arguments::setFn);
+		this->pParser->appendArgument(
+			STR("fd"), STR("double function argument"), &Arguments::setFd);
 		this->pParser->appendArgument(
 			STR("fs"), STR("string function argument"), &Arguments::setFs);
 		this->pParser->appendArgument(
@@ -708,18 +835,22 @@ TEST_F(PREFIX(ArgumentsParsingTest), arguments_should_be_substituted) {
 	const Ch* const ARGS[] = {
 		STR("test.exe"),
 		STR("123"),
+		STR("3.14"),
 		STR("str"),
 		STR("custom"),
 		STR("-3"),
+		STR("-1.5e-3"),
 		STR("called"),
 		STR("custom function")
 	};
 	const int ARGC = sizeof(ARGS) / sizeof(ARGS[0]);
 	Arguments args = this->pParser->parse(ARGC, ARGS);
 	EXPECT_EQ(123, args.i);
+	EXPECT_DOUBLE_EQ(3.14, args.d);
 	EXPECT_EQ(STR("str"), args.s);
 	EXPECT_EQ(6, args.custom);
 	EXPECT_EQ(-3, args.fn);
+	EXPECT_DOUBLE_EQ(-1.5e-3, args.fd);
 	EXPECT_EQ(STR("called"), args.fs);
 	EXPECT_EQ(15, args.customf);
 }
@@ -734,9 +865,11 @@ TEST_F(PREFIX(ArgumentsParsingTest), TooManyArguments_should_be_thrown_if_unnece
 	const Ch* const ARGS[] = {
 		STR("test.exe"),
 		STR("123"),
+		STR("3.14"),
 		STR("str"),
 		STR("custom"),
 		STR("-3"),
+		STR("-1.5e-3"),
 		STR("called"),
 		STR("custom function"),
 		STR("extra")
@@ -749,9 +882,11 @@ TEST_F(PREFIX(ArgumentsParsingTest), BadValue_should_be_thrown_if_non_number_is_
 	const Ch* const ARGS[] = {
 		STR("test.exe"),
 		STR("num"),
+		STR("3.14"),
 		STR("str"),
 		STR("custom"),
 		STR("-3"),
+		STR("-1.5e-3"),
 		STR("called"),
 		STR("custom function")
 	};
@@ -763,9 +898,11 @@ TEST_F(PREFIX(ArgumentsParsingTest), BadValue_should_be_thrown_if_non_number_is_
 	const Ch* const ARGS[] = {
 		STR("test.exe"),
 		STR("123"),
+		STR("3.14"),
 		STR("str"),
 		STR("custom"),
 		STR("three"),
+		STR("-1.5e-3"),
 		STR("called"),
 		STR("custom function")
 	};

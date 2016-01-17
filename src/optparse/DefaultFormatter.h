@@ -29,7 +29,7 @@ namespace optparse {
 		 *
 		 * @param valueStr
 		 *     String to be converted into a `T` value.
-		 * @throws OptionParserBase::BadValue
+		 * @throws BadValue< char >
 		 *     If `valueStr` is invalid.
 		 */
 		T operator ()(const std::basic_string< Ch >& valueStr) const;
@@ -44,14 +44,42 @@ namespace optparse {
 		 *
 		 * @param valueStr
 		 *     String to be converted.
-		 * @throws OptionParserBase::BadValue
-		 *     If `valueStr` is not an integer.
+		 * @throws BadValue< char >
+		 *     If `valueStr` is not an integer or empty.
 		 */
 		int operator ()(const std::string& valueStr) const {
+			if (valueStr.empty()) {
+				throw BadValue< char >("invalid integer", valueStr);
+			}
 			char* end = 0;
 			int x = strtol(valueStr.c_str(), &end, 10);
 			if (*end != '\0') {
 				throw BadValue< char >("invalid integer", valueStr);
+			}
+			return x;
+		}
+	};
+
+	/** `DefaultFormatter` which converts an `std::string` into `double`. */
+	template <>
+	class DefaultFormatter< double, char > {
+	public:
+		/**
+		 * Converts a given string into a `double` value.
+		 *
+		 * @param valueStr
+		 *     String to be converted.
+		 * @throws OptionParserBase::BadValue
+		 *     If `valueStr` does not represent a real number or empty.
+		 */
+		double operator ()(const std::string& valueStr) const {
+			if (valueStr.empty()) {
+				throw BadValue< char >("invalid number", valueStr);
+			}
+			char* end = 0;
+			double x = strtod(valueStr.c_str(), &end);
+			if (*end != '\0') {
+				throw BadValue< char >("invalid number", valueStr);
 			}
 			return x;
 		}
@@ -76,14 +104,42 @@ namespace optparse {
 		 *
 		 * @param valueStr
 		 *     String to be converted.
-		 * @throws OptionParserBase::BadValue
-		 *     If `valueStr` is not an integer.
+		 * @throws BadValue< wchar_t >
+		 *     If `valueStr` is not an integer or empty.
 		 */
 		int operator ()(const std::wstring& valueStr) const {
+			if (valueStr.empty()) {
+				throw BadValue< wchar_t >("invalid integer", valueStr);
+			}
 			wchar_t* end = 0;
 			int x = wcstol(valueStr.c_str(), &end, 10);
 			if (*end != '\0') {
 				throw BadValue< wchar_t >("invalid integer", valueStr);
+			}
+			return x;
+		}
+	};
+
+	/** `DefaultFormatter` which converts an `std::wstring` into `double`. */
+	template <>
+	class DefaultFormatter< double, wchar_t > {
+	public:
+		/**
+		 * Converts a given string into a `double` value.
+		 *
+		 * @param valueStr
+		 *     String to be converted.
+		 * @throws BadValue< wchar_t >
+		 *     If `valueStr` does not represent a real number or empty.
+		 */
+		double operator ()(const std::wstring& valueStr) const {
+			if (valueStr.empty()) {
+				throw BadValue< wchar_t >("invalid number", valueStr);
+			}
+			wchar_t* end = 0;
+			double x = wcstod(valueStr.c_str(), &end);
+			if (*end != '\0') {
+				throw BadValue< wchar_t >("invalid number", valueStr);
 			}
 			return x;
 		}

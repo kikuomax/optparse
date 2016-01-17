@@ -47,6 +47,8 @@ if (GENERATE_TESTS)
 	# builds a test binary
 	include_directories (${GTEST_INCLUDE_DIRS})
 	add_executable (optparse-test
+		test/char_DefaultFormatterTest.cpp
+		test/wchar_t_DefaultFormatterTest.cpp
 		test/char_OptionParserBaseTest.cpp
 		test/wchar_t_OptionParserBaseTest.cpp)
 	target_link_libraries (optparse-test ${GTEST_BOTH_LIBRARIES})
