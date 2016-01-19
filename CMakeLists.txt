@@ -7,6 +7,26 @@ set (PROJECT_MINOR 1)
 set (PROJECT_PATCH 0-SNAPSHOT)
 set (PROJECT_VERSION "${PROJECT_MAJOR}.${PROJECT_MINOR}.${PROJECT_PATCH}")
 
+# turn off if you want to dynamically link the MSVC runtime
+option (MSVC_LINK_STATIC_RUNTIME "Statically link the MSVC runtime" on)
+
+# replaces /MD with /MT if the static MSVC runtime is needed
+if (MSVC AND MSVC_LINK_STATIC_RUNTIME)
+	foreach (flag_var
+		CMAKE_CXX_FLAGS
+		CMAKE_CXX_FLAGS_DEBUG
+		CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS_MINSIZEREL
+		CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+	   if (${flag_var} MATCHES "/MD")
+		  string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	   endif ()
+	endforeach ()
+
+	# finds googletest built for the static runtime
+	set (GTEST_MSVC_SEARCH "MT")
+endif ()
+
 # finds Doxygen
 find_package (Doxygen)
 
@@ -22,7 +42,7 @@ find_package (GTest)
 option (GENERATE_TESTS "Generate tests" ${GTEST_FOUND})
 
 # enables c++11
-if (CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif ()
 
@@ -51,6 +71,11 @@ if (GENERATE_TESTS)
 		test/wchar_t_DefaultFormatterTest.cpp
 		test/char_OptionParserBaseTest.cpp
 		test/wchar_t_OptionParserBaseTest.cpp)
+	# old Visual Studio needs a tweak
+	if (MSVC AND MSVC_VERSION LESS 1800)
+		set_target_properties (optparse-test
+			PROPERTIES COMPILE_FLAGS "-D_VARIADIC_MAX=10")
+	endif ()
 	target_link_libraries (optparse-test ${GTEST_BOTH_LIBRARIES})
 	add_test (optparse-test optparse-test)
 endif ()

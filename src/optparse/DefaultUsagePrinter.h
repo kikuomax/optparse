@@ -153,8 +153,8 @@ namespace optparse {
 			this->out << "usage: " << parser.getProgramName();
 			// appends optional arguments if exist
 			if (parser.getOptionCount() > 0) {
-				const int N = static_cast< int >(parser.getOptionCount());
-				for (int i = 0; i < N; ++i) {
+				const size_t N = parser.getOptionCount();
+				for (size_t i = 0; i < N; ++i) {
 					const OptionSpec< Ch >& spec = parser.getOption(i);
 					this->out << Traits::fromChar(" [") << spec.getLabel();
 					if (spec.needsValue()) {
@@ -166,8 +166,8 @@ namespace optparse {
 			}
 			// appends positional arguments if exist
 			if (parser.getArgumentCount() > 0) {
-				const int N = static_cast< int >(parser.getArgumentCount());
-				for (int i = 0; i < N; ++i) {
+				const size_t N = parser.getArgumentCount();
+				for (size_t i = 0; i < N; ++i) {
 					const ArgumentSpec< Ch >& spec = parser.getArgument(i);
 					this->out << Traits::fromChar(" ") << spec.getValueName();
 				}
@@ -183,8 +183,8 @@ namespace optparse {
 				this->out
 					<< Traits::fromChar("positional arguments:")
 					<< std::endl;
-				const int N = static_cast< int >(parser.getArgumentCount());
-				for (int i = 0; i < N; ++i) {
+				const size_t N = parser.getArgumentCount();
+				for (size_t i = 0; i < N; ++i) {
 					const ArgumentSpec< Ch >& arg = parser.getArgument(i);
 					this->out
 						<< Traits::fromChar("  ")
@@ -201,7 +201,7 @@ namespace optparse {
 				this->out << std::endl;
 				this->out
 					<< Traits::fromChar("optional arguments:") << std::endl;
-				const int N = static_cast< int >(parser.getOptionCount());
+				const size_t N = parser.getOptionCount();
 				for (size_t i = 0; i < N; ++i) {
 					const OptionSpec< Ch >& option = parser.getOption(i);
 					this->out
@@ -235,8 +235,8 @@ namespace optparse {
 			const OptionParserBase< Opt, Ch, MetaFormat >& parser)
 		{
 			size_t maxLen = 0;
-			const int N = static_cast< int >(parser.getArgumentCount());
-			for (int i = 0; i < N; ++i) {
+			const size_t N = parser.getArgumentCount();
+			for (size_t i = 0; i < N; ++i) {
 				const ArgumentSpec< Ch >& spec = parser.getArgument(i);
 				maxLen = std::max(spec.getValueName().size(), maxLen);
 			}
@@ -263,8 +263,8 @@ namespace optparse {
 			const OptionParserBase< Opt, Ch, MetaFormat >& parser)
 		{
 			size_t maxLen = 0;
-			const int N = static_cast< int >(parser.getOptionCount());
-			for (int i = 0; i < N; ++i) {
+			const size_t N = parser.getOptionCount();
+			for (size_t i = 0; i < N; ++i) {
 				const OptionSpec< Ch >& option = parser.getOption(i);
 				maxLen = std::max(toString(option).size(), maxLen);
 			}

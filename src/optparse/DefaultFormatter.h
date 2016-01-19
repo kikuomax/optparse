@@ -112,6 +112,9 @@ namespace optparse {
 			if (x > std::numeric_limits< unsigned int >::max()) {
 				throw BadValue< char >("out of range", valueStr);
 			}
+			if (valueStr[0] == '-') {
+				throw BadValue< char >("out of range", valueStr);
+			}
 			return x;
 		}
 	};
@@ -484,9 +487,6 @@ namespace optparse {
 			if (valueStr.empty()) {
 				throw BadValue< wchar_t >("invalid integer", valueStr);
 			}
-			if (valueStr[0] == L'-') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
 			wchar_t* end = 0;
 			errno = 0;
 			unsigned long x = wcstoul(valueStr.c_str(), &end, 10);
@@ -497,6 +497,9 @@ namespace optparse {
 				throw BadValue< wchar_t >("out of range", valueStr);
 			}
 			if (x > std::numeric_limits< unsigned int >::max()) {
+				throw BadValue< wchar_t >("out of range", valueStr);
+			}
+			if (valueStr[0] == L'-') {
 				throw BadValue< wchar_t >("out of range", valueStr);
 			}
 			return x;
@@ -525,7 +528,7 @@ namespace optparse {
 			}
 			wchar_t* end = 0;
 			long x = wcstol(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
+			if (*end != L'\0') {
 				throw BadValue< wchar_t >("invalid integer", valueStr);
 			}
 			if (x > std::numeric_limits< short >::max()) {

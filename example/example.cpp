@@ -74,7 +74,11 @@ static void setGlobalFlag(Options& options) {
 }
 
 /** Runs a test. */
+#if defined(WCHAR_EXAMPLE) && defined(_WIN32)
+int wmain(int argc, wchar_t** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
 	optparse::OptionParserBase< Options, Char, optparse::DefaultFormatter >
 		parser(STR("Example program"));
 	try {
@@ -102,6 +106,9 @@ int main(int argc, char** argv) {
 			STR("POS1"), STR("positional string value"),
 			&Options::positionalString);
 #ifdef WCHAR_EXAMPLE
+#ifdef _WIN32
+		wchar_t** args = argv;
+#else
 		struct Args {
 			int argc;
 			wchar_t** argv;
@@ -124,6 +131,7 @@ int main(int argc, char** argv) {
 		};
 		Args argWrapper(argc, argv);
 		wchar_t** args = argWrapper.argv;
+#endif
 #else
 		char** args = argv;
 #endif
@@ -151,10 +159,10 @@ int main(int argc, char** argv) {
 			<< STR("positional string: ")
 			<< options.positionalString
 			<< std::endl;
-	} catch (optparse::TooFewArguments& ex) {
+	} catch (optparse::TooFewArguments&) {
 		stdErr << STR("too few arguments") << std::endl;
 		return 1;
-	} catch (optparse::TooManyArguments& ex) {
+	} catch (optparse::TooManyArguments&) {
 		stdErr << STR("too many arguments") << std::endl;
 		return 1;
 	} catch (optparse::ValueNeeded< Char >& ex) {
@@ -170,7 +178,7 @@ int main(int argc, char** argv) {
 	} catch (optparse::UnknownOption< Char >& ex) {
 		stdErr << STR("unknown option: ") << ex.getLabel();
 		return 1;
-	} catch (optparse::HelpNeeded& ex) {
+	} catch (optparse::HelpNeeded&) {
 		optparse::DefaultUsagePrinter< Char > printer;
 		printer.printUsage(parser);
 		return 1;

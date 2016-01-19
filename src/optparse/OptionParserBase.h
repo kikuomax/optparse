@@ -663,14 +663,14 @@ namespace optparse {
 		/**
 		 * Returns the specification of the option at a given index.
 		 *
-		 * Undefined if `i < 0` or `i >= this->getOptionCount()`.
+		 * Undefined if `i >= this->getOptionCount()`.
 		 *
 		 * @param i
 		 *     Index of the option of which the specification is to be obtained.
 		 * @return
 		 *     Specification of the option at `i`.
 		 */
-		const OptionSpec< Ch >& getOption(int i) const {
+		const OptionSpec< Ch >& getOption(size_t i) const {
 			return *this->optionList[i];
 		}
 
@@ -897,13 +897,15 @@ namespace optparse {
 		/**
 		 * Returns the specification of the argument at a given index.
 		 *
+		 * Undefined if `i >= this->getArgumentCount()`.
+		 *
 		 * @param i
 		 *     Index of the argument of which the specification is to be
 		 *     obtained.
 		 * @return
 		 *     Specification of the argument at the index `i`.
 		 */
-		inline const ArgumentSpec< Ch >& getArgument(int i) const {
+		inline const ArgumentSpec< Ch >& getArgument(size_t i) const {
 			return *this->arguments[i];
 		}
 
@@ -1117,7 +1119,7 @@ namespace optparse {
 			if (label.size() == 1) {
 				return true;
 			}
-			const char c = label[1];
+			const Ch c = label[1];
 			return c != Ch('.') && !(Ch('0') <= c && c <= Ch('9'));
 		}
 	protected:
