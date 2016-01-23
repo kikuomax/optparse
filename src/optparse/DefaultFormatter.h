@@ -38,6 +38,270 @@ namespace optparse {
 		T operator ()(const std::basic_string< Ch >& valueStr) const;
 	};
 
+	/** Helper utilities for `DefaultFormatter`. */
+	class DefaultFormatterHelper {
+	public:
+		/**
+		 * Converts a given `char` string into a `long long` value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::strtoll(str, end, 10)
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numberical value.
+		 * @return
+		 *     `long long` value equivalent to `str`.
+		 */
+		static inline long long strtoll(const char* str, char** end) {
+#if defined(_MSC_VER) && _MSC_VER < 1800
+			return static_cast< long long >(_strtoi64(str, end, 10));
+#else
+			return ::strtoll(str, end, 10);
+#endif
+		}
+
+		/**
+		 * Converts a given `wchar_t` string into a `long long` value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::wcstoll(str, end, 10)
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numerical value.
+		 * @return
+		 *     `long long` value equivalent to `str`.
+		 */
+		static inline long long strtoll(const wchar_t* str, wchar_t** end) {
+#if defined(_MSC_VER) && _MSC_VER < 1800
+			return static_cast< long long >(_wcstoi64(str, end, 10));
+#else
+			return wcstoll(str, end, 10);
+#endif
+		}
+
+		/**
+		 * Converts a given `char` string into an `unsigned long long` value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::strtoull(str, end, 10)
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numerical value.
+		 * @return
+		 *     `unsigned long long` value equivalent to `str`.
+		 */
+		static inline unsigned long long strtoull(const char* str, char** end) {
+#if defined(_MSC_VER) && _MSC_VER < 1800
+			return static_cast< unsigned long long >(_strtoui64(str, end, 10));
+#else
+			return ::strtoull(str, end, 10);
+#endif
+		}
+
+		/**
+		 * Converts a given `wchar_t` string  into an `unsigned long long`
+		 * value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::wcstoull(str, end, 10)
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numerical value.
+		 * @return
+		 *     `unsigned long long` value equivalent to `str`.
+		 */
+		static inline unsigned long long
+			strtoull(const wchar_t* str, wchar_t** end)
+		{
+#if defined(_MSC_VER) && _MSC_VER < 1800
+			return static_cast< unsigned long long >(_wcstoui64(str, end, 10));
+#else
+			return wcstoull(str, end, 10);
+#endif
+		}
+
+		/**
+		 * Converts a given `char` string into a `double` value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::strtod(str, end);
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numerical value.
+		 * @return
+		 *     `double` value equivalent to `str`.
+		 */
+		static inline double strtod(const char* str, char** end) {
+			return ::strtod(str, end);
+		}
+
+		/**
+		 * Converts a given `wchar_t` string into a `double` value.
+		 *
+		 * Equivalent to the following call,
+		 *
+		 *     ::wcstod(str, end)
+		 *
+		 * @param str
+		 *     C-string to be converted.
+		 * @param[out] end
+		 *     Set to the reference to the next character in `str` after
+		 *     the numerical value.
+		 * @return
+		 *     `double` value equivalent to `str`.
+		 */
+		static inline double strtod(const wchar_t* str, wchar_t** end) {
+			return ::wcstod(str, end);
+		}
+
+		/**
+		 * Converts a given string into a value of a signed integer type `S`.
+		 *
+		 * `valueStr` will be converted into a `long long` value, and then
+		 * it will be casted to `S`.
+		 *
+		 * @tparam S
+		 *     Type which represents a value.
+		 *     Must be a signed integer type.
+		 * @tparam Ch
+		 *     Type which represents a character.
+		 * @param valueStr
+		 *     String to be converted.
+		 * @return
+		 *     `S` value equivalent to `valueStr`.
+		 * @throws BadValue< Ch >
+		 *     If `valueStr` is empty,
+		 *     or if `valueStr` is not an integer,
+		 *     or if `valueStr` is out of the range representable by `S`.
+		 */
+		template < typename S, typename Ch >
+		static S toSigned(const std::basic_string< Ch >& valueStr) {
+			if (valueStr.empty()) {
+				throw BadValue< Ch >("invalid integer", valueStr);
+			}
+			Ch* end = 0;
+			errno = 0;
+			long long x = strtoll(valueStr.c_str(), &end);
+			if (*end != Ch('\0')) {
+				throw BadValue< Ch >("invalid integer", valueStr);
+			}
+			if (errno == ERANGE) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (x > std::numeric_limits< S >::max()) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (x < std::numeric_limits< S >::min()) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			return static_cast< S >(x);
+		}
+
+		/**
+		 * Converts a given string into a value of an unsigned integer type `U`.
+		 *
+		 * `valueStr` will be converted into `unsigned long long`, and then
+		 * it will be casted to `U`.
+		 *
+		 * @tparam U
+		 *     Type which represents a value.
+		 *     Must be an unsigned integer type.
+		 * @tparam Ch
+		 *     Type which represents a character.
+		 * @param valueStr
+		 *     String to be converted.
+		 * @return
+		 *     `U` value equivalent to `valueStr`.
+		 * @throws BadValue< Ch >
+		 *     If `valueStr` is empty,
+		 *     or if `valueStr` is not an integer,
+		 *     or if `valueStr` is out of the range representable by `U`.
+		 */
+		template < typename U, typename Ch >
+		static U toUnsigned(const std::basic_string< Ch >& valueStr) {
+			if (valueStr.empty()) {
+				throw BadValue< Ch >("invalid integer", valueStr);
+			}
+			Ch* end = 0;
+			errno = 0;
+			long long x = strtoull(valueStr.c_str(), &end);
+			if (*end != Ch('\0')) {
+				throw BadValue< Ch >("invalid integer", valueStr);
+			}
+			if (errno == ERANGE) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (x > std::numeric_limits< U >::max()) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (valueStr[0] == Ch('-')) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			return static_cast< U >(x);
+		}
+
+		/**
+		 * Converts a given string into a floating point number.
+		 *
+		 * Undefined if `valueStr` causes underflow.
+		 *
+		 * @tparam F
+		 *     Type which represents a floating point number.
+		 * @tparam Ch
+		 *     Type which represents a character.
+		 * @param valueStr
+		 *     String to be converted.
+		 * @return
+		 *     `F` value equivalent to `valueStr`.
+		 * @throws BadValue< Ch >
+		 *     If `valueStr` is empty,
+		 *     or if `valueStr` is not a number,
+		 *     or if `valueStr` is out of the range representable by `F`.
+		 */
+		template < typename F, typename Ch >
+		static F toFloat(const std::basic_string< Ch >& valueStr) {
+			if (valueStr.empty()) {
+				throw BadValue< Ch >("invalid number", valueStr);
+			}
+			Ch* end = 0;
+			errno = 0;
+			double x = strtod(valueStr.c_str(), &end);
+			if (*end != Ch('\0')) {
+				throw BadValue< Ch >("invalid number", valueStr);
+			}
+			if (errno == ERANGE) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (x > std::numeric_limits< F >::max()) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			if (x < std::numeric_limits< F >::lowest()) {
+				throw BadValue< Ch >("out of range", valueStr);
+			}
+			return static_cast< F >(x);
+		}
+	};
+
 	/** `DefaultFormatter` which converts an `std::string` into `int`. */
 	template <>
 	class DefaultFormatter< int, char > {
@@ -55,25 +319,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `int`.
 		 */
 		int operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-			long x = strtol(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (x > std::numeric_limits< int >::max()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< int >::min()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return static_cast< int >(x);
+			return DefaultFormatterHelper::toSigned< int >(valueStr);
 		}
 	};
 
@@ -97,25 +343,7 @@ namespace optparse {
 		 *     `unsigned int`.
 		 */
 		unsigned int operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-			unsigned long x = strtoul(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (x > std::numeric_limits< unsigned int >::max()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (valueStr[0] == '-') {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toUnsigned< unsigned int >(valueStr);
 		}
 	};
 
@@ -136,21 +364,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `short`.
 		 */
 		short operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			long x = strtol(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (x > std::numeric_limits< short >::max()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< short >::min()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return static_cast< short >(x);
+			return DefaultFormatterHelper::toSigned< short >(valueStr);
 		}
 	};
 
@@ -174,18 +388,8 @@ namespace optparse {
 		 *     `unsigned short`.
 		 */
 		unsigned short operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			unsigned long x = strtoul(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (x > std::numeric_limits< unsigned short >::max()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return static_cast< unsigned short >(x);
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned short >(valueStr);
 		}
 	};
 
@@ -206,19 +410,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `long`.
 		 */
 		long operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-			long x = strtol(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toSigned< long >(valueStr);
 		}
 	};
 
@@ -242,22 +434,8 @@ namespace optparse {
 		 *     `unsigned long`.
 		 */
 		unsigned long operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-			unsigned long x = strtoul(valueStr.c_str(), &end, 10);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (valueStr[0] == '-') {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned long >(valueStr);
 		}
 	};
 
@@ -279,24 +457,7 @@ namespace optparse {
 		 *     `long long`.
 		 */
 		long long operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-#if defined(_MSC_VER) && _MSC_VER < 1800
-			long long x = static_cast< long long >(
-				_strtoi64(valueStr.c_str(), &end, 10));
-#else
-			long long x = strtoll(valueStr.c_str(), &end, 10);
-#endif
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toSigned< long long >(valueStr);
 		}
 	};
 
@@ -321,27 +482,8 @@ namespace optparse {
 		 *     `unsigned long long`.
 		 */
 		unsigned long long operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-#if defined(_MSC_VER) && _MSC_VER < 1800
-			unsigned long long x = static_cast< unsigned long long >(
-				_strtoui64(valueStr.c_str(), &end, 10));
-#else
-			unsigned long long x = strtoull(valueStr.c_str(), &end, 10);
-#endif
-			if (*end != '\0') {
-				throw BadValue< char >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (valueStr[0] == '-') {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned long long >(valueStr);
 		}
 	};
 
@@ -364,19 +506,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `double`.
 		 */
 		double operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			char* end = 0;
-			errno = 0;
-			double x = strtod(valueStr.c_str(), &end);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toFloat< double >(valueStr);
 		}
 	};
 
@@ -397,21 +527,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `float`.
 		 */
 		float operator ()(const std::string& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			char* end = 0;
-			double x = strtod(valueStr.c_str(), &end);
-			if (*end != '\0') {
-				throw BadValue< char >("invalid number", valueStr);
-			}
-			if (x > std::numeric_limits< float >::max()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< float >::lowest()) {
-				throw BadValue< char >("out of range", valueStr);
-			}
-			return static_cast< float >(x);
+			return DefaultFormatterHelper::toFloat< float >(valueStr);
 		}
 	};
 
@@ -442,25 +558,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `int`.
 		 */
 		int operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-			long x = wcstol(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (x > std::numeric_limits< int >::max()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< int >::min()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toSigned< int >(valueStr);
 		}
 	};
 
@@ -484,25 +582,7 @@ namespace optparse {
 		 *     `unsigned int`.
 		 */
 		unsigned int operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-			unsigned long x = wcstoul(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (x > std::numeric_limits< unsigned int >::max()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (valueStr[0] == L'-') {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toUnsigned< unsigned int >(valueStr);
 		}
 	};
 
@@ -523,21 +603,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `short`.
 		 */
 		short operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			long x = wcstol(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (x > std::numeric_limits< short >::max()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< short >::min()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return static_cast< short >(x);
+			return DefaultFormatterHelper::toSigned< short >(valueStr);
 		}
 	};
 
@@ -562,18 +628,8 @@ namespace optparse {
 		 *     `unsigned short`.
 		 */
 		unsigned short operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			unsigned long x = wcstoul(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (x > std::numeric_limits< unsigned short >::max()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return static_cast< unsigned short >(x);
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned short >(valueStr);
 		}
 	};
 
@@ -594,19 +650,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `long`.
 		 */
 		long operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-			long x = wcstol(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toSigned< long >(valueStr);
 		}
 	};
 
@@ -630,22 +674,8 @@ namespace optparse {
 		 *     `unsigned long`.
 		 */
 		unsigned long operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-			unsigned long x = wcstoul(valueStr.c_str(), &end, 10);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (valueStr[0] == L'-') {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned long >(valueStr);
 		}
 	};
 
@@ -667,24 +697,7 @@ namespace optparse {
 		 *     `long long`.
 		 */
 		long long operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-#if defined(_MSC_VER) && _MSC_VER < 1800
-			long long x = static_cast< long long >(
-				_wcstoi64(valueStr.c_str(), &end, 10));
-#else
-			long long x = wcstoll(valueStr.c_str(), &end, 10);
-#endif
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toSigned< long long >(valueStr);
 		}
 	};
 
@@ -709,27 +722,8 @@ namespace optparse {
 		 *     `unsigned long long`.
 		 */
 		unsigned long long operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-#if defined(_MSC_VER) && _MSC_VER < 1800
-			unsigned long long x = static_cast< unsigned long long >(
-				_wcstoui64(valueStr.c_str(), &end, 10));
-#else
-			unsigned long long x = wcstoull(valueStr.c_str(), &end, 10);
-#endif
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid integer", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (valueStr[0] == L'-') {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper
+				::toUnsigned< unsigned long long >(valueStr);
 		}
 	};
 
@@ -752,19 +746,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `double`.
 		 */
 		double operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid number", valueStr);
-			}
-			wchar_t* end = 0;
-			errno = 0;
-			double x = wcstod(valueStr.c_str(), &end);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid number", valueStr);
-			}
-			if (errno == ERANGE) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return x;
+			return DefaultFormatterHelper::toFloat< double >(valueStr);
 		}
 	};
 
@@ -785,21 +767,7 @@ namespace optparse {
 		 *     or if `valueStr` is out of the range representable by `float`.
 		 */
 		float operator ()(const std::wstring& valueStr) const {
-			if (valueStr.empty()) {
-				throw BadValue< wchar_t >("invalid number", valueStr);
-			}
-			wchar_t* end = 0;
-			double x = wcstod(valueStr.c_str(), &end);
-			if (*end != L'\0') {
-				throw BadValue< wchar_t >("invalid number", valueStr);
-			}
-			if (x > std::numeric_limits< float >::max()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			if (x < std::numeric_limits< float >::lowest()) {
-				throw BadValue< wchar_t >("out of range", valueStr);
-			}
-			return static_cast< float >(x);
+			return DefaultFormatterHelper::toFloat< float >(valueStr);
 		}
 	};
 

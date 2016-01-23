@@ -375,7 +375,8 @@ TEST(PREFIX(DefaultFormatter_double_Test), double_can_be_formatted) {
 	EXPECT_DOUBLE_EQ(-1, format(STR("-1")));
 	EXPECT_DOUBLE_EQ(3.14, format(STR("3.14")));
 	EXPECT_DOUBLE_EQ(-1.5e-3, format(STR("-1.5e-3")));
-	EXPECT_DOUBLE_EQ(6.02e+23, format(STR("6.02e+23")));
+	EXPECT_DOUBLE_EQ(1.0e+308, format(STR("1.0e+308")));
+	EXPECT_DOUBLE_EQ(-1.0e+308, format(STR("-1.0e+308")));
 	EXPECT_DOUBLE_EQ(.5, format(STR(".5")));
 	EXPECT_DOUBLE_EQ(-.5, format(STR("-.5")));
 }
@@ -404,6 +405,8 @@ TEST(PREFIX(DefaultFormatter_float_Test), float_can_be_formatted) {
 	EXPECT_FLOAT_EQ(3.14f, format(STR("3.14")));
 	EXPECT_FLOAT_EQ(-1.5e-3f, format(STR("-1.5e-3")));
 	EXPECT_FLOAT_EQ(6.02e+23f, format(STR("6.02e+23")));
+	EXPECT_FLOAT_EQ(1.0e+38f, format(STR("1.0e+38")));
+	EXPECT_FLOAT_EQ(-1.0e+38f, format(STR("-1.0e+38")));
 	EXPECT_FLOAT_EQ(.5f, format(STR(".5")));
 	EXPECT_FLOAT_EQ(-.5f, format(STR("-.5")));
 }
