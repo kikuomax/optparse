@@ -6,10 +6,164 @@
 //  - PREFIX(name): macro which prefixes a test case name to avoid conflict
 //
 
+#include "gtest_helper.h"
+
 #include "optparse/DefaultFormatter.h"
 #include "optparse/OptionParserBase.h"
 
 #include "gtest/gtest.h"
+
+/**
+ * Generic tests for `OptionParserBase`.
+ *
+ * @tparam T
+ *     Type of a value which an option or argument accepts.
+ */
+template < typename T >
+class PREFIX(OptionParserBaseTest) : public ::testing::Test {
+public:
+	/** Options container type. */
+	struct Dummy {
+		/** Field to be substituted by an option or argument. */
+		T field;
+	};
+
+	/** Type instance of `OptionParserBase`. */
+	typedef optparse::OptionParserBase<
+		Dummy, Ch, optparse::DefaultFormatter > Parser;
+
+	/** Function called when an option or argument is specified. */
+	static void valueCallback(Dummy&, const T&) {}
+
+	/** Function called when an option is specified, which takes no value. */
+	static void noValueCallback(Dummy&) {}
+};
+
+TYPED_TEST_CASE_P(PREFIX(OptionParserBaseTest));
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), field_option_can_be_added) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.addOption(
+		STR("--opt"), STR("OPT"), STR("field option"),
+		&TestFixture::Dummy::field);
+	ASSERT_EQ(1U, parser.getOptionCount());
+	EXPECT_EQ(STR("--opt"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("field option"), parser.getOption(0).getDescription());
+	ASSERT_TRUE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR("OPT"), parser.getOption(0).getValueName());
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_field_option_is_invalid) {
+	typename TestFixture::Parser parser(STR("test program"));
+	ASSERT_THROW(
+		parser.addOption(
+			STR("o"), STR("value"), STR("field option"),
+			&TestFixture::Dummy::field),
+		optparse::ConfigException);
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), function_option_can_be_added) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.addOption(
+		STR("-f"), STR("callback"), STR("function option"),
+		&TestFixture::valueCallback);
+	ASSERT_EQ(1U, parser.getOptionCount());
+	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("function option"), parser.getOption(0).getDescription());
+	ASSERT_TRUE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR("callback"), parser.getOption(0).getValueName());
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_function_option_is_invalid) {
+	typename TestFixture::Parser parser(STR("test program"));
+	ASSERT_THROW(
+		parser.addOption(
+			STR("-.9"), STR("XYZ"), STR("function option"),
+			&TestFixture::valueCallback),
+		optparse::ConfigException);
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), function_option_without_value_can_be_added) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.addOption(
+		STR("-s"), STR("test function"), &TestFixture::noValueCallback);
+	ASSERT_EQ(1U, parser.getOptionCount());
+	EXPECT_EQ(STR("-s"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("test function"), parser.getOption(0).getDescription());
+	ASSERT_FALSE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR(""), parser.getOption(0).getValueName());
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_function_option_without_value_is_invalid) {
+	typename TestFixture::Parser parser(STR("test program"));
+	ASSERT_THROW(
+		parser.addOption(
+			STR("-.-"), STR("test function"),
+			&TestFixture::noValueCallback),
+		optparse::ConfigException);
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), option_with_same_label_should_replace_old_option) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.addOption(
+		STR("-f"), STR("X"), STR("old field option"),
+		&TestFixture::Dummy::field);
+	parser.addOption(
+		STR("-f"), STR("Y"), STR("new field option"),
+		&TestFixture::Dummy::field);
+	ASSERT_EQ(1U, parser.getOptionCount());
+	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
+	EXPECT_EQ(STR("new field option"), parser.getOption(0).getDescription());
+	ASSERT_TRUE(parser.getOption(0).needsValue());
+	EXPECT_EQ(STR("Y"), parser.getOption(0).getValueName());
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), field_argument_can_be_added) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.appendArgument(
+		STR("VAL"), STR("field argument"), &TestFixture::Dummy::field);
+	ASSERT_EQ(1U, parser.getArgumentCount());
+	EXPECT_EQ(STR("field argument"), parser.getArgument(0).getDescription());
+	EXPECT_EQ(STR("VAL"), parser.getArgument(0).getValueName());
+}
+
+TYPED_TEST_P(PREFIX(OptionParserBaseTest), function_argument_can_be_added) {
+	typename TestFixture::Parser parser(STR("test program"));
+	parser.appendArgument(
+		STR("IFUN"), STR("int function argument"), &TestFixture::valueCallback);
+	ASSERT_EQ(1U, parser.getArgumentCount());
+	EXPECT_EQ(STR("int function argument"),
+			  parser.getArgument(0).getDescription());
+	EXPECT_EQ(STR("IFUN"), parser.getArgument(0).getValueName());
+}
+
+REGISTER_TYPED_TEST_CASE_P(
+	PREFIX(OptionParserBaseTest),
+	field_option_can_be_added,
+	ConfigException_should_be_thrown_if_label_of_field_option_is_invalid,
+	function_option_can_be_added,
+	ConfigException_should_be_thrown_if_label_of_function_option_is_invalid,
+	function_option_without_value_can_be_added,
+	ConfigException_should_be_thrown_if_label_of_function_option_without_value_is_invalid,
+	option_with_same_label_should_replace_old_option,
+	field_argument_can_be_added,
+	function_argument_can_be_added);
+
+typedef ::testing::Types<
+	int,
+	unsigned int,
+	short,
+	unsigned short,
+	long,
+	unsigned long,
+	long long,
+	unsigned long long,
+	float,
+	double,
+	String > ParsedValueTypes;
+
+INSTANTIATE_TYPED_TEST_CASE_P_INDIRECTLY(
+	Typed, PREFIX(OptionParserBaseTest), ParsedValueTypes);
 
 TEST(PREFIX(OptionParserBaseTest), description_can_be_set) {
 	struct Dummy {};
@@ -110,63 +264,6 @@ TEST(PREFIX(OptionParserBaseTest), string_starting_with_dash_followed_by_another
 	EXPECT_TRUE(Parser::isLabel(STR("--9")));
 }
 
-TEST(PREFIX(OptionParserBaseTest), int_field_option_can_be_added) {
-	struct Dummy {
-		int field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("--int"), STR("NUM"), STR("test int field"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("--int"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test int field"), parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("NUM"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), string_field_option_can_be_added) {
-	struct Dummy {
-		String field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("-s"), STR("name"), STR("test string field"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("-s"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test string field"), parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("name"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), double_field_option_can_be_added) {
-	struct Dummy {
-		double field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("-d"), STR("REAL"), STR("test double field"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("-d"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test double field"), parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("REAL"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_int_field_option_is_invalid) {
-	struct Dummy {
-		int field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	ASSERT_THROW(
-		parser.addOption(
-			STR("o"), STR("INT"), STR("test int field"), &Dummy::field),
-		optparse::ConfigException);
-}
-
 TEST(PREFIX(OptionParserBaseTest), custom_format_field_option_can_be_added) {
 	struct Dummy {
 		int field;
@@ -261,60 +358,6 @@ TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_
 		optparse::ConfigException);
 }
 
-TEST(PREFIX(OptionParserBaseTest), int_function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(STR("-f"), STR("count"), STR("test int function"), func);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test int function"), parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("count"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), string_function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const String&) = [](Dummy&, const String&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("--fun"), STR("SYMBOL"), STR("test string function"), func);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("--fun"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test string function"),
-			  parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("SYMBOL"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), double_function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const double&) = [](Dummy&, const double&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("--real"), STR("X"), STR("test double function"), func);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("--real"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test double function"),
-			  parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("X"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_int_function_option_is_invalid) {
-	struct Dummy {};
-	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	ASSERT_THROW(
-		parser.addOption(
-			STR("-.9"), STR("XYZ"), STR("test int function"), func),
-		optparse::ConfigException);
-}
-
 TEST(PREFIX(OptionParserBaseTest), custom_format_function_option_can_be_added) {
 	struct Dummy {};
 	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
@@ -346,82 +389,6 @@ TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_
 		optparse::ConfigException);
 }
 
-TEST(PREFIX(OptionParserBaseTest), function_option_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&) = [](Dummy&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(STR("-s"), STR("test function"), func);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("-s"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test function"), parser.getOption(0).getDescription());
-	ASSERT_FALSE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR(""), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_function_option_is_invalid) {
-	struct Dummy {};
-	void (*func)(Dummy&) = [](Dummy&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	ASSERT_THROW(parser.addOption(STR("-.-"), STR("test function"), func),
-				 optparse::ConfigException);
-}
-
-TEST(PREFIX(OptionParserBaseTest), int_field_option_can_be_replaced_with_string_field_option) {
-	struct Dummy {
-		int intField;
-		String stringField;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.addOption(
-		STR("-f"), STR("N"), STR("test int field"), &Dummy::intField);
-	parser.addOption(
-		STR("-f"), STR("STR"), STR("test string field"), &Dummy::stringField);
-	ASSERT_EQ(1U, parser.getOptionCount());
-	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
-	EXPECT_EQ(STR("test string field"), parser.getOption(0).getDescription());
-	ASSERT_TRUE(parser.getOption(0).needsValue());
-	EXPECT_EQ(STR("STR"), parser.getOption(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), int_field_argument_can_be_added) {
-	struct Dummy {
-		int field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("INT"), STR("int argument"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("int argument"), parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("INT"), parser.getArgument(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), string_field_argument_can_be_added) {
-	struct Dummy {
-		String field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("STRING"), STR("string argument"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("string argument"), parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("STRING"), parser.getArgument(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), double_field_argument_can_be_added) {
-	struct Dummy {
-		double field;
-	};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("DOUBLE"), STR("double argument"), &Dummy::field);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("double argument"), parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("DOUBLE"), parser.getArgument(0).getValueName());
-}
-
 TEST(PREFIX(OptionParserBaseTest), custom_format_field_argument_can_be_added) {
 	struct Dummy {
 		int field;
@@ -437,42 +404,6 @@ TEST(PREFIX(OptionParserBaseTest), custom_format_field_argument_can_be_added) {
 	EXPECT_EQ(STR("custom int argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("X"), parser.getArgument(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), int_function_argument_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const int&) = [](Dummy&, const int&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("IFUN"), STR("int function argument"), func);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("int function argument"),
-			  parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("IFUN"), parser.getArgument(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), string_function_argument_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const String&) = [](Dummy&, const String&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("SFUN"), STR("string function argument"), func);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("string function argument"),
-			  parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("SFUN"), parser.getArgument(0).getValueName());
-}
-
-TEST(PREFIX(OptionParserBaseTest), double_function_argument_can_be_added) {
-	struct Dummy {};
-	void (*func)(Dummy&, const String&) = [](Dummy&, const String&) {};
-	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
-		parser(STR("test program"));
-	parser.appendArgument(STR("DFUN"), STR("double function argument"), func);
-	ASSERT_EQ(1U, parser.getArgumentCount());
-	EXPECT_EQ(STR("double function argument"),
-			  parser.getArgument(0).getDescription());
-	EXPECT_EQ(STR("DFUN"), parser.getArgument(0).getValueName());
 }
 
 TEST(PREFIX(OptionParserBaseTest), custom_format_function_argument_can_be_added) {
