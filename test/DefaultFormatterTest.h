@@ -192,8 +192,8 @@ TEST(PREFIX(DefaultFormatter_int_Test), BadValue_should_be_thrown_for_out_of_ran
 
 TEST(PREFIX(DefaultFormatter_unsigned_int_Test), unsigned_int_can_be_formatted) {
 	optparse::DefaultFormatter< unsigned int, Ch > format;
-	EXPECT_EQ(0, format(STR("0")));
-	EXPECT_EQ(1, format(STR("1")));
+	EXPECT_EQ(0U, format(STR("0")));
+	EXPECT_EQ(1U, format(STR("1")));
 	EXPECT_EQ(UINT_MAX, format(STR_UINT_MAX));
 }
 
@@ -242,8 +242,8 @@ TEST(PREFIX(DefaultFormatter_short_Test), BadValue_should_be_thrown_for_out_of_r
 
 TEST(PREFIX(DefaultFormatter_unsigned_short_Test), unsigned_short_can_be_formatted) {
 	optparse::DefaultFormatter< unsigned short, Ch > format;
-	EXPECT_EQ(0, format(STR("0")));
-	EXPECT_EQ(1, format(STR("1")));
+	EXPECT_EQ(0U, format(STR("0")));
+	EXPECT_EQ(1U, format(STR("1")));
 	EXPECT_EQ(std::numeric_limits< unsigned short >::max(),
 			  format(STR_USHORT_MAX));
 }

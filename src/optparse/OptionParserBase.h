@@ -249,7 +249,7 @@ namespace optparse {
 			}
 
 			/** Needs a value; i.e., throws `ValueNeeded`. */
-			virtual void operator ()(Opt& option) {
+			virtual void operator ()(Opt&) {
 				throw ValueNeeded< Ch >(this->label);
 			}
 		};
@@ -280,7 +280,7 @@ namespace optparse {
 			}
 
 			/** Does not take values; i.e., throws `BadValue`. */
-			virtual void operator ()(Opt& option, const String& value) {
+			virtual void operator ()(Opt&, const String&) {
 				throw BadValue< Ch >("no value needed", this->label);
 			}
 		};

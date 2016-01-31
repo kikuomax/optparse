@@ -59,17 +59,17 @@ struct Options {
 };
 
 /** Triggers a help message. */
-static void triggerHelp(Options& options) {
+static void triggerHelp(Options&) {
 	throw optparse::HelpNeeded();
 }
 
 /** Sets the debug level. */
-static void setDebugLevel(Options& options, const int& level) {
+static void setDebugLevel(Options&, const int& level) {
 	stdOut << STR("set debug level to ") << level << std::endl;
 }
 
 /** Sets the global flag. */
-static void setGlobalFlag(Options& options) {
+static void setGlobalFlag(Options&) {
 	stdOut << STR("set global flag") << std::endl;
 }
 

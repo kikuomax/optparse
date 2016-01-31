@@ -29,14 +29,14 @@ TEST(PREFIX(OptionParserBaseTest), parser_should_have_no_option_by_default) {
 	struct Dummy {};
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
-	ASSERT_EQ(0, parser.getOptionCount());
+	ASSERT_EQ(0U, parser.getOptionCount());
 }
 
 TEST(PREFIX(OptionParserBaseTest), parser_should_have_no_argument_by_default) {
 	struct Dummy {};
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
-	ASSERT_EQ(0, parser.getArgumentCount());
+	ASSERT_EQ(0U, parser.getArgumentCount());
 }
 
 TEST(PREFIX(OptionParserBaseTest), string_starting_with_dash_followed_by_alphabet_can_be_option_label) {
@@ -118,7 +118,7 @@ TEST(PREFIX(OptionParserBaseTest), int_field_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("--int"), STR("NUM"), STR("test int field"), &Dummy::field);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--int"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test int field"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -133,7 +133,7 @@ TEST(PREFIX(OptionParserBaseTest), string_field_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("-s"), STR("name"), STR("test string field"), &Dummy::field);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-s"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test string field"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -148,7 +148,7 @@ TEST(PREFIX(OptionParserBaseTest), double_field_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("-d"), STR("REAL"), STR("test double field"), &Dummy::field);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-d"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test double field"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -179,7 +179,7 @@ TEST(PREFIX(OptionParserBaseTest), custom_format_field_option_can_be_added) {
 	parser.addOption(
 		STR("--custom"), STR("X"), STR("custom int field"),
 		&Dummy::field, format);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--custom"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("custom int field"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -208,7 +208,7 @@ TEST(PREFIX(OptionParserBaseTest), const_int_field_option_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.addOption(STR("-o"), STR("test const int field"), &Dummy::field, 1);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-o"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test const int field"),
 			  parser.getOption(0).getDescription());
@@ -225,7 +225,7 @@ TEST(PREFIX(OptionParserBaseTest), const_string_field_option_can_be_added) {
 	parser.addOption(
 		STR("-o"), STR("test const string field"),
 		&Dummy::field, String(STR("s")));
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-o"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test const string field"),
 			  parser.getOption(0).getDescription());
@@ -241,7 +241,7 @@ TEST(PREFIX(OptionParserBaseTest), const_double_field_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("-o"), STR("test const double field"), &Dummy::field, -0.5);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-o"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test const double field"),
 			  parser.getOption(0).getDescription());
@@ -267,7 +267,7 @@ TEST(PREFIX(OptionParserBaseTest), int_function_option_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.addOption(STR("-f"), STR("count"), STR("test int function"), func);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test int function"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -281,7 +281,7 @@ TEST(PREFIX(OptionParserBaseTest), string_function_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("--fun"), STR("SYMBOL"), STR("test string function"), func);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--fun"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test string function"),
 			  parser.getOption(0).getDescription());
@@ -296,7 +296,7 @@ TEST(PREFIX(OptionParserBaseTest), double_function_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("--real"), STR("X"), STR("test double function"), func);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--real"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test double function"),
 			  parser.getOption(0).getDescription());
@@ -325,7 +325,7 @@ TEST(PREFIX(OptionParserBaseTest), custom_format_function_option_can_be_added) {
 		parser(STR("test program"));
 	parser.addOption(
 		STR("--xfun"), STR("X"), STR("custom int function"), func, format);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--xfun"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("custom int function"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -352,7 +352,7 @@ TEST(PREFIX(OptionParserBaseTest), function_option_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.addOption(STR("-s"), STR("test function"), func);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-s"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test function"), parser.getOption(0).getDescription());
 	ASSERT_FALSE(parser.getOption(0).needsValue());
@@ -379,7 +379,7 @@ TEST(PREFIX(OptionParserBaseTest), int_field_option_can_be_replaced_with_string_
 		STR("-f"), STR("N"), STR("test int field"), &Dummy::intField);
 	parser.addOption(
 		STR("-f"), STR("STR"), STR("test string field"), &Dummy::stringField);
-	ASSERT_EQ(1, parser.getOptionCount());
+	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("test string field"), parser.getOption(0).getDescription());
 	ASSERT_TRUE(parser.getOption(0).needsValue());
@@ -393,7 +393,7 @@ TEST(PREFIX(OptionParserBaseTest), int_field_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("INT"), STR("int argument"), &Dummy::field);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("int argument"), parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("INT"), parser.getArgument(0).getValueName());
 }
@@ -405,7 +405,7 @@ TEST(PREFIX(OptionParserBaseTest), string_field_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("STRING"), STR("string argument"), &Dummy::field);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("string argument"), parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("STRING"), parser.getArgument(0).getValueName());
 }
@@ -417,7 +417,7 @@ TEST(PREFIX(OptionParserBaseTest), double_field_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("DOUBLE"), STR("double argument"), &Dummy::field);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("double argument"), parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("DOUBLE"), parser.getArgument(0).getValueName());
 }
@@ -433,7 +433,7 @@ TEST(PREFIX(OptionParserBaseTest), custom_format_field_argument_can_be_added) {
 		parser(STR("test program"));
 	parser.appendArgument(
 		STR("X"), STR("custom int argument"), &Dummy::field, format);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("custom int argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("X"), parser.getArgument(0).getValueName());
@@ -445,7 +445,7 @@ TEST(PREFIX(OptionParserBaseTest), int_function_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("IFUN"), STR("int function argument"), func);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("int function argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("IFUN"), parser.getArgument(0).getValueName());
@@ -457,7 +457,7 @@ TEST(PREFIX(OptionParserBaseTest), string_function_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("SFUN"), STR("string function argument"), func);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("string function argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("SFUN"), parser.getArgument(0).getValueName());
@@ -469,7 +469,7 @@ TEST(PREFIX(OptionParserBaseTest), double_function_argument_can_be_added) {
 	optparse::OptionParserBase< Dummy, Ch, optparse::DefaultFormatter >
 		parser(STR("test program"));
 	parser.appendArgument(STR("DFUN"), STR("double function argument"), func);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("double function argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("DFUN"), parser.getArgument(0).getValueName());
@@ -485,7 +485,7 @@ TEST(PREFIX(OptionParserBaseTest), custom_format_function_argument_can_be_added)
 		parser(STR("test program"));
 	parser.appendArgument(
 		STR("XFUN"), STR("custom function argument"), func, format);
-	ASSERT_EQ(1, parser.getArgumentCount());
+	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("custom function argument"),
 			  parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("XFUN"), parser.getArgument(0).getValueName());

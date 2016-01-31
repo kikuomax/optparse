@@ -244,7 +244,7 @@ namespace optparse {
 			}
 			Ch* end = 0;
 			errno = 0;
-			long long x = strtoull(valueStr.c_str(), &end);
+			unsigned long long x = strtoull(valueStr.c_str(), &end);
 			if (*end != Ch('\0')) {
 				throw BadValue< Ch >("invalid integer", valueStr);
 			}

@@ -13,18 +13,40 @@ option (MSVC_LINK_STATIC_RUNTIME "Statically link the MSVC runtime" on)
 # replaces /MD with /MT if the static MSVC runtime is needed
 if (MSVC AND MSVC_LINK_STATIC_RUNTIME)
 	foreach (flag_var
-		CMAKE_CXX_FLAGS
-		CMAKE_CXX_FLAGS_DEBUG
-		CMAKE_CXX_FLAGS_RELEASE
-		CMAKE_CXX_FLAGS_MINSIZEREL
-		CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-	   if (${flag_var} MATCHES "/MD")
-		  string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	   endif ()
+			CMAKE_CXX_FLAGS
+			CMAKE_CXX_FLAGS_DEBUG
+			CMAKE_CXX_FLAGS_RELEASE
+			CMAKE_CXX_FLAGS_MINSIZEREL
+			CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+		if (${flag_var} MATCHES "/MD")
+			string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		endif ()
 	endforeach ()
-
 	# finds googletest built for the static runtime
 	set (GTEST_MSVC_SEARCH "MT")
+endif ()
+
+# sets the warning level to the maximum
+if (MSVC)
+	foreach (flag_var
+			CMAKE_CXX_FLAGS
+			CMAKE_CXX_FLAGS_DEBUG
+			CMAKE_CXX_FLAGS_RELEASE
+			CMAKE_CXX_FLAGS_MINSIZEREL
+			CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+		if (${flag_var} MATCHES "/W[0-3]")
+			string (REGEX REPLACE "/W[0-3]" "/W4" ${flag_var} "${${flag_var}}")
+		else ()
+			set (${flag_var} "${${flag_var}} /W4")
+		endif ()
+	endforeach ()
+elseif (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-long-long")
+endif ()
+
+# enables c++11 on GNU compilers
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif ()
 
 # finds Doxygen
@@ -40,11 +62,6 @@ find_package (GTest)
 # turn on if you want to generate tests
 # turned on by default as long as googletest is found
 option (GENERATE_TESTS "Generate tests" ${GTEST_FOUND})
-
-# enables c++11
-if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif ()
 
 configure_file (src/optparse/optparse.h.in src/optparse/optparse.h @ONLY)
 
