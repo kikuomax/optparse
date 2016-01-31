@@ -71,12 +71,9 @@ include_directories (
 	test
 	${PROJECT_BINARY_DIR}/src)
 
-add_executable (example example/example.cpp)
+add_executable (example example/char_example.cpp)
 
-add_executable (wexample example/example.cpp)
-
-set_target_properties (wexample
-	PROPERTIES COMPILE_FLAGS "-DWCHAR_EXAMPLE")
+add_executable (wexample example/wchar_example.cpp)
 
 # generates tests if necessary
 if (GENERATE_TESTS)
