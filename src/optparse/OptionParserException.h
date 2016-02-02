@@ -32,7 +32,7 @@ namespace optparse {
 	};
 
 	/** Exception thrown when a configuration is invalid. */
-	class ConfigException : Exception {
+	class ConfigException : public Exception {
 	public:
 		/**
 		 * Initializes with a brief explanation.

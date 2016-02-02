@@ -311,6 +311,13 @@ namespace optparse {
 			padded.insert(str.size(), n, Traits::fromChar(' '));
 			return padded;
 		}
+
+		/** Assignment is not allowed. */
+#if defined(_MSC_VER) && _MSC_VER < 1800
+		void operator =(const DefaultUsagePrinter&) {}
+#else
+		void operator =(const DefaultUsagePrinter&) = delete;
+#endif
 	};
 
 }

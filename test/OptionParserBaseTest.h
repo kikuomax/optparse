@@ -43,9 +43,9 @@ TYPED_TEST_CASE_P(PREFIX(OptionParserBaseTest));
 
 TYPED_TEST_P(PREFIX(OptionParserBaseTest), field_option_can_be_added) {
 	typename TestFixture::Parser parser(STR("test program"));
+	typedef typename TestFixture::Dummy Dummy;
 	parser.addOption(
-		STR("--opt"), STR("OPT"), STR("field option"),
-		&TestFixture::Dummy::field);
+		STR("--opt"), STR("OPT"), STR("field option"), &Dummy::field);
 	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("--opt"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("field option"), parser.getOption(0).getDescription());
@@ -55,10 +55,10 @@ TYPED_TEST_P(PREFIX(OptionParserBaseTest), field_option_can_be_added) {
 
 TYPED_TEST_P(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_label_of_field_option_is_invalid) {
 	typename TestFixture::Parser parser(STR("test program"));
+	typedef typename TestFixture::Dummy Dummy;
 	ASSERT_THROW(
 		parser.addOption(
-			STR("o"), STR("value"), STR("field option"),
-			&TestFixture::Dummy::field),
+			STR("o"), STR("value"), STR("field option"), &Dummy::field),
 		optparse::ConfigException);
 }
 
@@ -105,12 +105,11 @@ TYPED_TEST_P(PREFIX(OptionParserBaseTest), ConfigException_should_be_thrown_if_l
 
 TYPED_TEST_P(PREFIX(OptionParserBaseTest), option_with_same_label_should_replace_old_option) {
 	typename TestFixture::Parser parser(STR("test program"));
+	typedef typename TestFixture::Dummy Dummy;
 	parser.addOption(
-		STR("-f"), STR("X"), STR("old field option"),
-		&TestFixture::Dummy::field);
+		STR("-f"), STR("X"), STR("old field option"), &Dummy::field);
 	parser.addOption(
-		STR("-f"), STR("Y"), STR("new field option"),
-		&TestFixture::Dummy::field);
+		STR("-f"), STR("Y"), STR("new field option"), &Dummy::field);
 	ASSERT_EQ(1U, parser.getOptionCount());
 	EXPECT_EQ(STR("-f"), parser.getOption(0).getLabel());
 	EXPECT_EQ(STR("new field option"), parser.getOption(0).getDescription());
@@ -120,8 +119,9 @@ TYPED_TEST_P(PREFIX(OptionParserBaseTest), option_with_same_label_should_replace
 
 TYPED_TEST_P(PREFIX(OptionParserBaseTest), field_argument_can_be_added) {
 	typename TestFixture::Parser parser(STR("test program"));
+	typedef typename TestFixture::Dummy Dummy;
 	parser.appendArgument(
-		STR("VAL"), STR("field argument"), &TestFixture::Dummy::field);
+		STR("VAL"), STR("field argument"), &Dummy::field);
 	ASSERT_EQ(1U, parser.getArgumentCount());
 	EXPECT_EQ(STR("field argument"), parser.getArgument(0).getDescription());
 	EXPECT_EQ(STR("VAL"), parser.getArgument(0).getValueName());
